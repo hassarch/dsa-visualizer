@@ -19,11 +19,11 @@ const DEFAULT_GRAPH = {
 
 const NODE_POSITIONS = {
   A: { x: 400, y: 80 },
-  B: { x: 200, y: 230 },
-  C: { x: 600, y: 230 },
-  D: { x: 100, y: 400 },
-  E: { x: 300, y: 400 },
-  F: { x: 500, y: 400 },
+  B: { x: 200, y: 220 },
+  C: { x: 600, y: 220 },
+  D: { x: 100, y: 380 },
+  E: { x: 300, y: 380 },
+  F: { x: 500, y: 380 },
 }
 
 export default function GraphPage() {
@@ -39,9 +39,9 @@ export default function GraphPage() {
   const current = frame?.current
 
   function getNodeColor(node) {
-    if (node === current) return 'var(--current)'
-    if (visited.has(node)) return 'var(--visited)'
-    return 'var(--primary)'
+    if (node === current) return '#ffffff' // Current (White)
+    if (visited.has(node)) return '#38BDF8' // Visited (Cyan)
+    return '#a1a1aa' // Default (Grey)
   }
 
   function getEdgeVisited(u, v) {
@@ -63,167 +63,263 @@ export default function GraphPage() {
   const dataStructure = algoKey === 'bfs' ? queue : stack
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-canvas)' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#000000' }}>
       <Sidebar />
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-
+      
+      {/* Dashboard container */}
+      <div style={{
+        display: 'flex',
+        flex: 1,
+        gap: 24,
+        padding: '24px',
+        overflow: 'hidden'
+      }}>
+        
+        {/* Main visualizer column */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          minWidth: 0,
+          gap: 16
+        }}>
+          
           {/* Toolbar */}
-          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ display: 'flex', gap: 4 }}>
+          <div style={{
+            padding: '12px 16px',
+            borderRadius: '12px',
+            border: '1px solid #1F1F1F',
+            background: '#050505',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12
+          }}>
+            <div style={{ display: 'flex', gap: 6 }}>
               {Object.entries(ALGOS).map(([key, { label }]) => (
-                <button key={key} onClick={() => { setAlgoKey(key); playback.reset() }} style={{
-                  padding: '5px 12px', borderRadius: 7, border: '1px solid',
-                  borderColor: algoKey === key ? 'var(--primary)' : 'var(--border)',
-                  background: algoKey === key ? 'var(--primary-glow)' : 'transparent',
-                  color: algoKey === key ? 'var(--primary)' : 'var(--text-secondary)',
-                  fontSize: 12, fontWeight: algoKey === key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s'
-                }}>{label}</button>
+                <button 
+                  key={key} 
+                  onClick={() => { setAlgoKey(key); playback.reset() }} 
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: algoKey === key ? '#2e2e30' : '#1f1f1f',
+                    background: algoKey === key ? '#1c1c1e' : 'transparent',
+                    color: algoKey === key ? '#ffffff' : '#a1a1aa',
+                    fontSize: '12px',
+                    fontWeight: algoKey === key ? 600 : 400,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  {label}
+                </button>
               ))}
             </div>
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                Start node: <span style={{ color: 'var(--primary)', fontFamily: 'JetBrains Mono, monospace', fontWeight: 600 }}>A</span>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ fontSize: '11px', color: '#71717a' }}>
+                Start node: <span style={{ color: '#ffffff', fontFamily: 'JetBrains Mono, monospace', fontWeight: 600 }}>A</span>
               </div>
             </div>
           </div>
 
-          <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-            {/* Graph SVG */}
-            <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <svg width="100%" height="100%" viewBox="0 0 800 520" style={{ display: 'block', maxWidth: '1400px', maxHeight: '700px' }}>
-                <defs>
-                  <filter id="node-glow">
-                    <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                    <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
-                  </filter>
-                </defs>
+          {/* Visualizer Card */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            padding: '40px 24px 24px 24px',
+            background: '#000000',
+            border: '1px solid #1F1F1F',
+            borderRadius: '16px',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            
+            {/* Split Graph & Stack/Queue Sidepanel */}
+            <div style={{ flex: 1, display: 'flex', overflow: 'hidden', marginBottom: 40 }}>
+              
+              {/* Graph SVG canvas */}
+              <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="100%" height="100%" viewBox="0 0 800 480" style={{ display: 'block', maxWidth: '1400px', maxHeight: '600px' }}>
+                  <defs>
+                    <filter id="node-glow">
+                      <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                      <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                    </filter>
+                  </defs>
 
-                {/* Edges */}
-                {DEFAULT_GRAPH.edges.map(([u, v]) => {
-                  const pu = NODE_POSITIONS[u], pv = NODE_POSITIONS[v]
-                  const isVisited = getEdgeVisited(u, v)
-                  return (
-                    <line key={`${u}-${v}`}
-                      x1={pu.x} y1={pu.y} x2={pv.x} y2={pv.y}
-                      stroke={isVisited ? 'var(--visited)' : 'var(--border)'}
-                      strokeWidth={isVisited ? 4 : 2.5}
-                      opacity={isVisited ? 1 : 0.5}
-                      style={{ transition: 'all 0.4s' }}
-                    />
-                  )
-                })}
-
-                {/* Nodes */}
-                {DEFAULT_GRAPH.nodes.map(node => {
-                  const pos = NODE_POSITIONS[node]
-                  const color = getNodeColor(node)
-                  const isActive = node === current
-                  const isVisited = visited.has(node)
-
-                  return (
-                    <g key={node}>
-                      {/* Glow ring for active */}
-                      {isActive && (
-                        <circle cx={pos.x} cy={pos.y} r={56}
-                          fill="none" stroke={color} strokeWidth={2} opacity={0.25}
-                          filter="url(#node-glow)" />
-                      )}
-
-                      {/* Node circle */}
-                      <circle cx={pos.x} cy={pos.y} r={isActive ? 42 : 36}
-                        fill={`${color}20`}
-                        stroke={color}
-                        strokeWidth={isActive ? 4 : isVisited ? 3 : 2}
-                        style={{ transition: 'all 0.3s', filter: isActive ? 'url(#node-glow)' : 'none' }}
+                  {/* Edges */}
+                  {DEFAULT_GRAPH.edges.map(([u, v]) => {
+                    const pu = NODE_POSITIONS[u], pv = NODE_POSITIONS[v]
+                    const isVisited = getEdgeVisited(u, v)
+                    return (
+                      <line key={`${u}-${v}`}
+                        x1={pu.x} y1={pu.y} x2={pv.x} y2={pv.y}
+                        stroke={isVisited ? '#38BDF8' : '#1F1F1F'}
+                        strokeWidth={isVisited ? 3 : 2}
+                        opacity={isVisited ? 1 : 0.4}
+                        style={{ transition: 'all 0.4s' }}
                       />
+                    )
+                  })}
 
-                      {/* Node label */}
-                      <text x={pos.x} y={pos.y + 10} textAnchor="middle"
-                        fill={color} fontSize={isActive ? 28 : 24} fontWeight="700"
-                        fontFamily="JetBrains Mono, monospace"
-                        style={{ transition: 'all 0.3s' }}>
-                        {node}
-                      </text>
-                    </g>
-                  )
-                })}
-              </svg>
-            </div>
+                  {/* Nodes */}
+                  {DEFAULT_GRAPH.nodes.map(node => {
+                    const pos = NODE_POSITIONS[node]
+                    const color = getNodeColor(node)
+                    const isActive = node === current
+                    const isVisited = visited.has(node)
 
-            {/* Queue / Stack + Visited panel */}
-            <div style={{ width: 180, borderLeft: '1px solid var(--border)', padding: 16, display: 'flex', flexDirection: 'column', gap: 20, overflowY: 'auto' }}>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10 }}>
-                  {algoKey === 'bfs' ? 'Queue (FIFO)' : 'Stack (LIFO)'}
+                    return (
+                      <g key={node}>
+                        {/* Glow ring for active */}
+                        {isActive && (
+                          <circle cx={pos.x} cy={pos.y} r={48}
+                            fill="none" stroke={color} strokeWidth={1.5} opacity={0.2}
+                            filter="url(#node-glow)" />
+                        )}
+
+                        {/* Node circle */}
+                        <circle cx={pos.x} cy={pos.y} r={isActive ? 38 : 32}
+                          fill={isActive || isVisited ? 'rgba(255,255,255,0.03)' : 'transparent'}
+                          stroke={color}
+                          strokeWidth={isActive ? 3 : isVisited ? 2 : 1.5}
+                          style={{ transition: 'all 0.3s', filter: isActive ? 'url(#node-glow)' : 'none' }}
+                        />
+
+                        {/* Node label */}
+                        <text x={pos.x} y={pos.y + 8} textAnchor="middle"
+                          fill={color === '#a1a1aa' && !isVisited ? '#ffffff' : color} 
+                          fontSize={isActive ? '22px' : '18px'} 
+                          fontWeight="700"
+                          fontFamily="JetBrains Mono, monospace"
+                          style={{ transition: 'all 0.3s' }}>
+                          {node}
+                        </text>
+                      </g>
+                    )
+                  })}
+                </svg>
+              </div>
+
+              {/* Stack/Queue and Visited Sidepanel */}
+              <div style={{ 
+                width: 180, 
+                borderLeft: '1px solid #1F1F1F', 
+                padding: '0 0 0 24px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: 24, 
+                overflowY: 'auto' 
+              }}>
+                {/* Data Structure Card */}
+                <div>
+                  <div style={{ 
+                    fontSize: '10px', 
+                    fontWeight: 600, 
+                    letterSpacing: '0.08em', 
+                    color: '#71717a', 
+                    textTransform: 'uppercase', 
+                    marginBottom: 12 
+                  }}>
+                    {algoKey === 'bfs' ? 'Queue (FIFO)' : 'Stack (LIFO)'}
+                  </div>
+                  {dataStructure.length === 0 ? (
+                    <div style={{ fontSize: '12px', color: '#52525b', fontStyle: 'italic' }}>Empty</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {dataStructure.map((n, i) => (
+                        <div key={i} style={{
+                          padding: '8px 12px', 
+                          borderRadius: '8px', 
+                          textAlign: 'center',
+                          fontSize: '13px', 
+                          fontFamily: 'JetBrains Mono, monospace', 
+                          fontWeight: 700,
+                          background: i === 0 ? 'rgba(255, 255, 255, 0.05)' : '#121212',
+                          border: `1px solid ${i === 0 ? '#ffffff' : '#1F1F1F'}`,
+                          color: i === 0 ? '#ffffff' : '#a1a1aa',
+                          transition: 'all 0.2s'
+                        }}>
+                          {n}
+                          {i === 0 && <span style={{ fontSize: '9px', marginLeft: 6, opacity: 0.5, color: '#71717a' }}>next</span>}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                {dataStructure.length === 0 ? (
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>Empty</div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                    {dataStructure.map((n, i) => (
-                      <div key={i} style={{
-                        padding: '7px 12px', borderRadius: 8, textAlign: 'center',
-                        fontSize: 14, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
-                        background: i === 0 ? 'rgba(6,182,212,0.15)' : 'var(--bg-elevated)',
-                        border: `1px solid ${i === 0 ? 'var(--current)' : 'var(--border)'}`,
-                        color: i === 0 ? 'var(--current)' : 'var(--text-secondary)',
-                        transition: 'all 0.2s'
+
+                {/* Visited Card */}
+                <div>
+                  <div style={{ 
+                    fontSize: '10px', 
+                    fontWeight: 600, 
+                    letterSpacing: '0.08em', 
+                    color: '#71717a', 
+                    textTransform: 'uppercase', 
+                    marginBottom: 12 
+                  }}>
+                    Visited ({visited.size})
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {[...visited].map((n) => (
+                      <div key={n} style={{
+                        width: 32, 
+                        height: 32, 
+                        borderRadius: '50%',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        fontSize: '12px', 
+                        fontFamily: 'JetBrains Mono, monospace', 
+                        fontWeight: 700,
+                        background: 'rgba(56, 189, 248, 0.08)', 
+                        border: '1.5px solid #38BDF8', 
+                        color: '#38BDF8',
+                        animation: 'fadeUp 0.3s ease forwards'
                       }}>
                         {n}
-                        {i === 0 && <span style={{ fontSize: 9, marginLeft: 6, opacity: 0.7 }}>next</span>}
                       </div>
                     ))}
                   </div>
-                )}
-              </div>
-
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10 }}>
-                  Visited ({visited.size})
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                  {[...visited].map((n, i) => (
-                    <div key={n} style={{
-                      width: 36, height: 36, borderRadius: '50%',
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 13, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
-                      background: 'rgba(167,139,250,0.15)', border: '1.5px solid var(--visited)', color: 'var(--visited)',
-                      animation: 'fadeUp 0.3s ease forwards'
+                  {visited.size > 0 && (
+                    <div style={{ 
+                      marginTop: 12, 
+                      fontSize: '11px', 
+                      color: '#52525b', 
+                      fontFamily: 'JetBrains Mono, monospace',
+                      lineHeight: 1.4 
                     }}>
-                      {n}
+                      {[...visited].join(' → ')}
                     </div>
-                  ))}
+                  )}
                 </div>
-                {visited.size > 0 && (
-                  <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
-                    {[...visited].join(' → ')}
-                  </div>
-                )}
               </div>
+
             </div>
+
+            {/* Playback Controls */}
+            <PlaybackControls playback={playback} />
           </div>
 
-          {/* Legend */}
-          <div style={{ display: 'flex', gap: 16, padding: '8px 20px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
-            {[
-              { color: 'var(--primary)', label: 'Unvisited' },
-              { color: 'var(--current)', label: 'Processing' },
-              { color: 'var(--visited)', label: 'Visited' },
-            ].map(({ color, label }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: 10, height: 10, borderRadius: '50%', background: color }} />
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{label}</span>
-              </div>
-            ))}
-          </div>
-
-          <PlaybackControls playback={playback} />
         </div>
 
-        <div style={{ width: 300, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
-          <InfoPanel algoKey={algoKey} currentFrame={frame} />
+        {/* Right Info Widgets Column */}
+        <div style={{
+          width: 340,
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: 'auto',
+          flexShrink: 0,
+          paddingRight: 4
+        }}>
+          <InfoPanel algoKey={algoKey} currentFrame={frame} playback={playback} />
         </div>
+
       </div>
     </div>
   )

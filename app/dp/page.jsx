@@ -41,40 +41,111 @@ export default function DPPage() {
   }, [playback])
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-canvas)' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#000000' }}>
       <Sidebar />
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-
+      
+      {/* Dashboard container */}
+      <div style={{
+        display: 'flex',
+        flex: 1,
+        gap: 24,
+        padding: '24px',
+        overflow: 'hidden'
+      }}>
+        
+        {/* Main visualizer column */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          minWidth: 0,
+          gap: 16
+        }}>
+          
           {/* Toolbar */}
-          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ display: 'flex', gap: 4 }}>
+          <div style={{
+            padding: '12px 16px',
+            borderRadius: '12px',
+            border: '1px solid #1F1F1F',
+            background: '#050505',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12
+          }}>
+            <div style={{ display: 'flex', gap: 6 }}>
               {Object.entries(ALGOS).map(([key, { label }]) => (
-                <button key={key} onClick={() => { setAlgoKey(key); setInput(DEFAULTS[key]); playback.reset() }} style={{
-                  padding: '5px 12px', borderRadius: 7, border: '1px solid',
-                  borderColor: algoKey === key ? 'var(--primary)' : 'var(--border)',
-                  background: algoKey === key ? 'var(--primary-glow)' : 'transparent',
-                  color: algoKey === key ? 'var(--primary)' : 'var(--text-secondary)',
-                  fontSize: 12, fontWeight: algoKey === key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s'
-                }}>{label}</button>
+                <button 
+                  key={key} 
+                  onClick={() => { setAlgoKey(key); setInput(DEFAULTS[key]); playback.reset() }} 
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: algoKey === key ? '#2e2e30' : '#1f1f1f',
+                    background: algoKey === key ? '#1c1c1e' : 'transparent',
+                    color: algoKey === key ? '#ffffff' : '#a1a1aa',
+                    fontSize: '12px',
+                    fontWeight: algoKey === key ? 600 : 400,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  {label}
+                </button>
               ))}
             </div>
           </div>
 
-          {/* DP Canvas */}
-          <div style={{ flex: 1, overflow: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 64, background: 'var(--bg-canvas)' }}>
-            {algoKey === 'knapsack' && frame?.dp
-              ? <KnapsackTable frame={frame} />
-              : <OneDTable frame={frame} algoKey={algoKey} />
-            }
+          {/* Visualizer Card */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            padding: '40px 24px 24px 24px',
+            background: '#000000',
+            border: '1px solid #1F1F1F',
+            borderRadius: '16px',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            
+            {/* Visualizer Canvas Area */}
+            <div style={{ 
+              flex: 1, 
+              overflow: 'auto', 
+              display: 'flex', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              padding: '24px 0',
+              width: '100%',
+              marginBottom: 40
+            }}>
+              {algoKey === 'knapsack' && frame?.dp
+                ? <KnapsackTable frame={frame} />
+                : <OneDTable frame={frame} algoKey={algoKey} />
+              }
+            </div>
+
+            {/* Playback Controls */}
+            <PlaybackControls playback={playback} />
           </div>
 
-          <PlaybackControls playback={playback} />
         </div>
 
-        <div style={{ width: 300, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
-          <InfoPanel algoKey={algoKey} currentFrame={frame} />
+        {/* Right Info Widgets Column */}
+        <div style={{
+          width: 340,
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: 'auto',
+          flexShrink: 0,
+          paddingRight: 4
+        }}>
+          <InfoPanel algoKey={algoKey} currentFrame={frame} playback={playback} />
         </div>
+
       </div>
     </div>
   )
@@ -87,42 +158,42 @@ function OneDTable({ frame }) {
   const highlight = new Set(frame?.highlight ?? [])
 
   function getCellColor(i) {
-    if (i === current) return 'var(--compare)'
-    if (deps.has(i) || highlight.has(i)) return 'var(--visited)'
-    if (dp[i] !== null && dp[i] !== undefined && dp[i] !== Infinity) return 'var(--dp-fill)'
-    return 'var(--border)'
+    if (i === current) return '#ffffff' // Current comparing (White)
+    if (deps.has(i) || highlight.has(i)) return '#38BDF8' // Dependency (Cyan)
+    if (dp[i] !== null && dp[i] !== undefined && dp[i] !== Infinity) return '#a1a1aa' // Filled (zinc-400)
+    return '#333333' // Empty (Dark zinc)
   }
 
-  const cellSize = dp.length > 20 ? 64 : 76
-  const fontSize = dp.length > 20 ? 18 : 22
+  const cellSize = dp.length > 20 ? 48 : 56
+  const fontSize = dp.length > 20 ? '14px' : '16px'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 48, maxWidth: '1600px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 40, width: '100%' }}>
       {/* Coins display */}
       {frame?.coins && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ fontSize: 14, color: 'var(--text-muted)', fontWeight: 500 }}>Denominations:</span>
+          <span style={{ fontSize: '13px', color: '#71717a', fontWeight: 500 }}>Denominations:</span>
           {frame.coins.map(c => (
             <div key={c} style={{
-              width: 56, height: 56, borderRadius: '50%',
+              width: 44, height: 44, borderRadius: '50%',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontSize: 20, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
-              background: 'rgba(167,139,250,0.15)', border: '3px solid var(--visited)', color: 'var(--visited)',
-              boxShadow: '0 0 16px rgba(167,139,250,0.3)'
+              fontSize: '16px', fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
+              background: 'rgba(56, 189, 248, 0.08)', border: '2px solid #38BDF8', color: '#38BDF8',
+              boxShadow: '0 0 12px rgba(56, 189, 248, 0.15)'
             }}>{c}</div>
           ))}
         </div>
       )}
 
       {/* DP table */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
         {/* Index labels */}
         <div style={{ display: 'flex', gap: dp.length > 20 ? 4 : 8 }}>
           {dp.map((_, i) => (
             <div key={i} style={{
-              width: cellSize, textAlign: 'center', fontSize: 12,
+              width: cellSize, textAlign: 'center', fontSize: '11px',
               fontFamily: 'JetBrains Mono, monospace',
-              color: deps.has(i) ? 'var(--visited)' : i === current ? 'var(--compare)' : 'var(--text-muted)',
+              color: deps.has(i) ? '#38BDF8' : i === current ? '#ffffff' : '#52525b',
               fontWeight: i === current ? 700 : 500
             }}>{i}</div>
           ))}
@@ -135,14 +206,14 @@ function OneDTable({ frame }) {
             const isCurrent = i === current
             return (
               <div key={i} style={{
-                width: cellSize, height: cellSize, borderRadius: 14,
+                width: cellSize, height: cellSize, borderRadius: '10px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
-                background: `${color}25`,
-                border: `3px solid ${color}`,
-                color,
-                transform: isCurrent ? 'scale(1.2) translateY(-6px)' : 'scale(1)',
-                boxShadow: isCurrent ? `0 12px 32px ${color}55` : deps.has(i) ? `0 0 16px ${color}40` : 'none',
+                background: isCurrent ? 'rgba(255, 255, 255, 0.08)' : color === '#333333' ? 'transparent' : 'rgba(255, 255, 255, 0.03)',
+                border: `2px solid ${color}`,
+                color: color === '#333333' ? '#333333' : '#ffffff',
+                transform: isCurrent ? 'scale(1.15) translateY(-4px)' : 'scale(1)',
+                boxShadow: isCurrent ? `0 8px 20px rgba(255, 255, 255, 0.2)` : deps.has(i) ? `0 0 12px rgba(56, 189, 248, 0.15)` : 'none',
                 transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 zIndex: isCurrent ? 2 : 1, position: 'relative'
               }}>
@@ -156,34 +227,36 @@ function OneDTable({ frame }) {
         <div style={{ display: 'flex', gap: dp.length > 20 ? 4 : 8 }}>
           {dp.map((_, i) => (
             <div key={i} style={{
-              width: cellSize, textAlign: 'center', fontSize: 11,
-              fontFamily: 'JetBrains Mono, monospace', color: 'var(--text-muted)', fontWeight: 500
+              width: cellSize, textAlign: 'center', fontSize: '10px',
+              fontFamily: 'JetBrains Mono, monospace', color: '#52525b', fontWeight: 500
             }}>dp[{i}]</div>
           ))}
         </div>
       </div>
 
       {/* Dependency arrows */}
-      {deps.size > 0 && current >= 0 && (
-        <div style={{
-          padding: '12px 20px', borderRadius: 10, fontSize: 14,
-          fontFamily: 'JetBrains Mono, monospace', color: 'var(--visited)',
-          background: 'rgba(167,139,250,0.1)', border: '2px solid rgba(167,139,250,0.3)'
-        }}>
-          dp[{current}] ← {[...deps].map(d => `dp[${d}]`).join(' + ')}
-        </div>
-      )}
+      <div style={{ height: 48, display: 'flex', alignItems: 'center' }}>
+        {deps.size > 0 && current >= 0 && (
+          <div style={{
+            padding: '8px 16px', borderRadius: '8px', fontSize: '13px',
+            fontFamily: 'JetBrains Mono, monospace', color: '#38BDF8',
+            background: 'rgba(56, 189, 248, 0.05)', border: '1px solid rgba(56, 189, 248, 0.2)'
+          }}>
+            dp[{current}] ← {[...deps].map(d => `dp[${d}]`).join(' + ')}
+          </div>
+        )}
 
-      {/* Final answer highlight */}
-      {frame && !deps.size && current >= 0 && dp[current] !== Infinity && dp[current] !== null && (
-        <div style={{
-          padding: '14px 28px', borderRadius: 12, fontSize: 16, fontWeight: 600,
-          background: 'rgba(16,185,129,0.12)', color: 'var(--sorted)',
-          border: '2px solid rgba(16,185,129,0.4)'
-        }}>
-          ✓ dp[{current}] = {dp[current]}
-        </div>
-      )}
+        {/* Final answer highlight */}
+        {frame && !deps.size && current >= 0 && dp[current] !== Infinity && dp[current] !== null && (
+          <div style={{
+            padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 600,
+            background: 'rgba(16,185,129,0.08)', color: '#10B981',
+            border: '1px solid rgba(16,185,129,0.3)'
+          }}>
+            ✓ dp[{current}] = {dp[current]}
+          </div>
+        )}
+      </div>
     </div>
   )
 }
@@ -195,51 +268,58 @@ function KnapsackTable({ frame }) {
   const capacity = dp[0]?.length - 1 ?? 0
 
   return (
-    <div style={{ overflow: 'auto', maxWidth: '1400px' }}>
-      <div style={{ marginBottom: 16, fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', fontWeight: 500 }}>
-        rows = items, columns = capacity
+    <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ marginBottom: 16, fontSize: '12px', color: '#71717a', textAlign: 'center', fontWeight: 500 }}>
+        Rows (i) = Items, Columns (w) = Capacity
       </div>
-      <table style={{ borderCollapse: 'separate', borderSpacing: 4, fontFamily: 'JetBrains Mono, monospace', fontSize: 14 }}>
-        <thead>
-          <tr>
-            <th style={{ padding: '6px 12px', color: 'var(--text-muted)', fontWeight: 600, textAlign: 'center' }}>i\W</th>
-            {Array.from({ length: capacity + 1 }, (_, j) => (
-              <th key={j} style={{ padding: '6px 12px', color: j === currentCol ? 'var(--compare)' : 'var(--text-muted)', fontWeight: j === currentCol ? 700 : 500, textAlign: 'center', minWidth: 48 }}>{j}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {dp.map((row, i) => (
-            <tr key={i}>
-              <td style={{ padding: '6px 12px', color: i === currentRow ? 'var(--compare)' : 'var(--text-muted)', fontWeight: i === currentRow ? 700 : 500, textAlign: 'center' }}>
-                {i === 0 ? '∅' : `${i}`}
-              </td>
-              {row.map((val, j) => {
-                const isCurrent = i === currentRow && j === currentCol
-                const isRowCol = i === currentRow || j === currentCol
-                return (
-                  <td key={j} style={{
-                    padding: 0, textAlign: 'center',
-                  }}>
-                    <div style={{
-                      width: 48, height: 48, borderRadius: 10,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 16, fontWeight: isCurrent ? 700 : 500,
-                      background: isCurrent ? 'var(--compare)' : isRowCol ? 'rgba(186,230,253,0.12)' : 'var(--bg-elevated)',
-                      border: `2px solid ${isCurrent ? 'var(--compare)' : isRowCol ? 'rgba(186,230,253,0.3)' : 'var(--border)'}`,
-                      color: isCurrent ? '#000' : val > 0 ? 'var(--dp-fill)' : 'var(--text-muted)',
-                      transform: isCurrent ? 'scale(1.15)' : 'scale(1)',
-                      transition: 'all 0.25s',
-                    }}>
-                      {val}
-                    </div>
-                  </td>
-                )
-              })}
+      
+      <div style={{ overflowX: 'auto', maxWidth: '100%' }}>
+        <table style={{ borderCollapse: 'separate', borderSpacing: 6, fontFamily: 'JetBrains Mono, monospace', fontSize: '13px' }}>
+          <thead>
+            <tr>
+              <th style={{ padding: '6px 12px', color: '#52525b', fontWeight: 600, textAlign: 'center' }}>i\w</th>
+              {Array.from({ length: capacity + 1 }, (_, j) => (
+                <th key={j} style={{ padding: '6px 12px', color: j === currentCol ? '#ffffff' : '#52525b', fontWeight: j === currentCol ? 700 : 500, textAlign: 'center', minWidth: 40 }}>{j}</th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {dp.map((row, i) => (
+              <tr key={i}>
+                <td style={{ padding: '6px 12px', color: i === currentRow ? '#ffffff' : '#52525b', fontWeight: i === currentRow ? 700 : 500, textAlign: 'center' }}>
+                  {i === 0 ? '∅' : `${i}`}
+                </td>
+                {row.map((val, j) => {
+                  const isCurrent = i === currentRow && j === currentCol
+                  const isRowCol = i === currentRow || j === currentCol
+                  return (
+                    <td key={j} style={{ padding: 0, textAlign: 'center' }}>
+                      <div style={{
+                        width: 42, 
+                        height: 42, 
+                        borderRadius: '8px',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        fontSize: '14px', 
+                        fontWeight: isCurrent ? 700 : 500,
+                        background: isCurrent ? 'rgba(255,255,255,0.08)' : isRowCol ? 'rgba(56,189,248,0.04)' : 'transparent',
+                        border: `1.5px solid ${isCurrent ? '#ffffff' : isRowCol ? 'rgba(56,189,248,0.2)' : '#1F1F1F'}`,
+                        color: isCurrent ? '#ffffff' : val > 0 ? '#38BDF8' : '#52525b',
+                        transform: isCurrent ? 'scale(1.15)' : 'scale(1)',
+                        boxShadow: isCurrent ? '0 0 12px rgba(255,255,255,0.2)' : 'none',
+                        transition: 'all 0.25s',
+                      }}>
+                        {val}
+                      </div>
+                    </td>
+                  )
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }

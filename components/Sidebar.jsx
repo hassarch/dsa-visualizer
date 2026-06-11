@@ -1,45 +1,45 @@
 'use client'
 import { usePathname, useRouter } from 'next/navigation'
-import { BarChart2, Link2, GitBranch, Boxes, Search, Sun, Moon, Menu, X, ChevronRight, Zap } from 'lucide-react'
+import { ArrowDownNarrowWide, Search, GitBranch, LayoutGrid, Layers, Settings, Menu } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 
 const NAV = [
-  { id: 'sorting', label: 'Sorting', icon: BarChart2, path: '/sorting', algos: ['Bubble', 'Selection', 'Insertion', 'Merge', 'Quick', 'Heap'] },
-  { id: 'search', label: 'Search', icon: Search, path: '/search', algos: ['Binary Search', 'Linear Search'] },
-  { id: 'linked-list', label: 'Linked List', icon: Link2, path: '/linked-list', algos: ['Reverse', 'Append', 'Delete'] },
-  { id: 'graph', label: 'Graph', icon: GitBranch, path: '/graph', algos: ['BFS', 'DFS'] },
-  { id: 'dp', label: 'Dynamic Programming', icon: Boxes, path: '/dp', algos: ['Fibonacci', 'Coin Change', 'Climbing Stairs', 'Knapsack'] },
+  { id: 'sorting', label: 'Sorting', icon: ArrowDownNarrowWide, path: '/sorting' },
+  { id: 'search', label: 'Searching', icon: Search, path: '/search' },
+  { id: 'graph', label: 'Graph Algorithms', icon: GitBranch, path: '/graph' },
+  { id: 'dp', label: 'Dynamic Programming', icon: LayoutGrid, path: '/dp' },
+  { id: 'linked-list', label: 'Linked List', icon: Layers, path: '/linked-list' },
 ]
 
 export default function Sidebar() {
-  const { theme, toggleTheme, sidebarOpen, setSidebarOpen } = useAppStore()
+  const { theme, sidebarOpen, setSidebarOpen } = useAppStore()
   const router = useRouter()
   const pathname = usePathname()
 
   if (!sidebarOpen) {
     return (
       <div style={{
-        width: 52, background: 'var(--bg-surface)', borderRight: '1px solid var(--border)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px 0', gap: 4, flexShrink: 0
+        width: 64, background: '#000000', borderRight: '1px solid var(--border)',
+        display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0', gap: 8, flexShrink: 0
       }}>
         <button onClick={() => setSidebarOpen(true)} style={{
-          width: 36, height: 36, borderRadius: 8, border: 'none', background: 'transparent',
-          color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          marginBottom: 8
+          width: 40, height: 40, borderRadius: 8, border: 'none', background: 'transparent',
+          color: '#71717a', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+          marginBottom: 16
         }}>
-          <Menu size={18} />
+          <Menu size={20} />
         </button>
         {NAV.map(({ id, icon: Icon, path }) => {
           const isActive = pathname === path
           return (
             <button key={id} onClick={() => router.push(path)} title={id} style={{
-              width: 36, height: 36, borderRadius: 8, border: 'none',
-              background: isActive ? 'var(--primary-glow)' : 'transparent',
-              color: isActive ? 'var(--primary)' : 'var(--text-muted)',
+              width: 40, height: 40, borderRadius: 8, border: 'none',
+              background: isActive ? '#ffffff' : 'transparent',
+              color: isActive ? '#000000' : '#71717a',
               cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'all 0.15s'
             }}>
-              <Icon size={17} />
+              <Icon size={18} />
             </button>
           )
         })}
@@ -49,93 +49,68 @@ export default function Sidebar() {
 
   return (
     <div style={{
-      width: 248, background: 'var(--bg-surface)', borderRight: '1px solid var(--border)',
-      display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden'
+      width: 256, background: '#000000', borderRight: '1px solid var(--border)',
+      display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden',
+      padding: '24px 16px', justifyContent: 'space-between'
     }}>
-      {/* Header */}
-      <div style={{ padding: '16px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div style={{
-            width: 32, height: 32, borderRadius: 8, background: 'linear-gradient(135deg, #3B82F6, #8B5CF6)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center'
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0px 8px', marginBottom: 32 }}>
+          <Layers size={20} color="#ffffff" style={{ strokeWidth: 2.5 }} />
+          <span style={{
+            fontWeight: 700, fontSize: 13, color: '#ffffff',
+            letterSpacing: '0.08em', textTransform: 'uppercase'
           }}>
-            <Zap size={16} color="white" />
-          </div>
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', letterSpacing: '-0.3px' }}>DSA Visualizer</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>Algorithm Learning</div>
-          </div>
+            DSA Visualizer
+          </span>
         </div>
-        <div style={{ display: 'flex', gap: 2 }}>
-          <button onClick={toggleTheme} style={{
-            width: 28, height: 28, borderRadius: 6, border: 'none', background: 'transparent',
-            color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
-          </button>
-          <button onClick={() => setSidebarOpen(false)} style={{
-            width: 28, height: 28, borderRadius: 6, border: 'none', background: 'transparent',
-            color: 'var(--text-muted)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center'
-          }}>
-            <X size={14} />
-          </button>
-        </div>
+
+        {/* Navigation */}
+        <nav style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {NAV.map(({ id, label, icon: Icon, path }) => {
+            const isActive = pathname === path
+            return (
+              <button key={id} onClick={() => router.push(path)} style={{
+                width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+                padding: '12px 14px', border: 'none', cursor: 'pointer', borderRadius: 8,
+                background: isActive ? '#ffffff' : 'transparent',
+                color: isActive ? '#000000' : '#a1a1aa',
+                transition: 'all 0.15s', textAlign: 'left',
+                textTransform: 'uppercase', fontSize: 11, fontWeight: isActive ? 600 : 500,
+                letterSpacing: '0.05em'
+              }}>
+                <Icon size={16} style={{ strokeWidth: isActive ? 2.5 : 2 }} />
+                <span>{label}</span>
+              </button>
+            )
+          })}
+        </nav>
       </div>
 
-      {/* Nav */}
-      <nav style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
-        <div style={{ padding: '8px 16px 4px', fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-          Visualizers
-        </div>
-        {NAV.map(({ id, label, icon: Icon, path, algos }) => {
-          const isActive = pathname === path
-          return (
-            <div key={id}>
-              <button onClick={() => router.push(path)} style={{
-                width: '100%', display: 'flex', alignItems: 'center', gap: 10,
-                padding: '8px 16px', border: 'none', cursor: 'pointer',
-                background: isActive ? 'var(--primary-glow)' : 'transparent',
-                color: isActive ? 'var(--primary)' : 'var(--text-secondary)',
-                borderLeft: isActive ? '2px solid var(--primary)' : '2px solid transparent',
-                transition: 'all 0.15s', textAlign: 'left'
-              }}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: 6, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: isActive ? 'rgba(59,130,246,0.15)' : 'var(--bg-elevated)'
-                }}>
-                  <Icon size={14} />
-                </div>
-                <span style={{ fontSize: 13, fontWeight: isActive ? 500 : 400, flex: 1 }}>{label}</span>
-                <ChevronRight size={12} style={{ transform: isActive ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s', opacity: 0.5 }} />
-              </button>
-              {isActive && (
-                <div style={{ paddingBottom: 4 }}>
-                  {algos.map(algo => (
-                    <div key={algo} style={{ padding: '3px 16px 3px 54px', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
-                      {algo}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )
-        })}
-      </nav>
-
       {/* Footer */}
-      <div style={{ padding: 16, borderTop: '1px solid var(--border)' }}>
-        <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8, fontWeight: 500 }}>Keyboard Shortcuts</div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {[['Space', 'Play / Pause'], ['← →', 'Step through'], ['R', 'Reset']].map(([key, action]) => (
-            <div key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <kbd style={{
-                padding: '2px 6px', borderRadius: 4, fontSize: 10, fontFamily: 'JetBrains Mono, monospace',
-                background: 'var(--bg-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)'
-              }}>{key}</kbd>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{action}</span>
-            </div>
-          ))}
-        </div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div style={{ borderTop: '1px solid var(--border)', margin: '12px 4px 16px 4px' }} />
+        
+        <button onClick={() => router.push('/search')} style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+          padding: '12px 14px', border: 'none', cursor: 'pointer', borderRadius: 8,
+          background: 'transparent', color: '#a1a1aa', transition: 'all 0.15s', textAlign: 'left',
+          textTransform: 'uppercase', fontSize: 11, fontWeight: 500, letterSpacing: '0.05em'
+        }}>
+          <Search size={16} />
+          <span>Search</span>
+        </button>
+
+        <button style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
+          padding: '12px 14px', border: 'none', borderRadius: 8,
+          background: 'transparent', color: '#71717a', textAlign: 'left',
+          textTransform: 'uppercase', fontSize: 11, fontWeight: 500, letterSpacing: '0.05em',
+          cursor: 'default'
+        }}>
+          <Settings size={16} />
+          <span>Settings</span>
+        </button>
       </div>
     </div>
   )

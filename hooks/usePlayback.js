@@ -91,6 +91,18 @@ export function usePlayback(generatorFn, input) {
     return () => cancelAnimationFrame(rafRef.current)
   }, [isPlaying, speed])
 
+  const goToFrame = useCallback((index) => {
+    cancelAnimationFrame(rafRef.current)
+    setIsPlaying(false)
+    const targetIdx = Math.max(-1, Math.min(index, framesRef.current.length - 1))
+    setCurrentIndex(targetIdx)
+    if (targetIdx === framesRef.current.length - 1) {
+      setIsDone(true)
+    } else {
+      setIsDone(false)
+    }
+  }, [])
+
   return {
     frames,
     currentFrame,
@@ -106,5 +118,6 @@ export function usePlayback(generatorFn, input) {
     reset,
     setSpeed,
     rebuild: buildFrames,
+    goToFrame,
   }
 }

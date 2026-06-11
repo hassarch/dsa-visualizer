@@ -30,15 +30,15 @@ export default function SearchPage() {
   const target = frame?.target ?? input.target
 
   function getColor(i) {
-    if (frame?.found === i) return 'var(--sorted)'
-    if (frame?.found === -2) return 'var(--swap)'
+    if (frame?.found === i) return '#10B981' // Found (Green)
+    if (frame?.found === -2) return '#EF4444' // Not Found (Red)
     if (algoKey === 'binarySearch') {
-      if (frame?.mid === i) return 'var(--compare)'
-      if (i >= (frame?.left ?? 0) && i <= (frame?.right ?? arr.length - 1)) return 'var(--primary)'
-      return 'var(--text-muted)'
+      if (frame?.mid === i) return '#ffffff' // Mid (White)
+      if (i >= (frame?.left ?? 0) && i <= (frame?.right ?? arr.length - 1)) return '#a1a1aa' // In range (Grey)
+      return '#333333' // Out of range (Dark grey)
     }
-    if (frame?.current === i) return 'var(--compare)'
-    return 'var(--primary)'
+    if (frame?.current === i) return '#ffffff' // Current (White)
+    return '#a1a1aa'
   }
 
   useEffect(() => {
@@ -54,121 +54,280 @@ export default function SearchPage() {
   }, [playback])
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-canvas)' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#000000' }}>
       <Sidebar />
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-
+      
+      {/* Dashboard container */}
+      <div style={{
+        display: 'flex',
+        flex: 1,
+        gap: 24,
+        padding: '24px',
+        overflow: 'hidden'
+      }}>
+        
+        {/* Main visualizer column */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          minWidth: 0,
+          gap: 16
+        }}>
+          
           {/* Toolbar */}
-          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
-            <div style={{ display: 'flex', gap: 4 }}>
+          <div style={{
+            padding: '12px 16px',
+            borderRadius: '12px',
+            border: '1px solid #1F1F1F',
+            background: '#050505',
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12
+          }}>
+            <div style={{ display: 'flex', gap: 6 }}>
               {Object.entries(ALGOS).map(([key, { label }]) => (
-                <button key={key} onClick={() => { setAlgoKey(key); setInput(DEFAULTS[key]); playback.reset() }} style={{
-                  padding: '5px 12px', borderRadius: 7, border: '1px solid',
-                  borderColor: algoKey === key ? 'var(--primary)' : 'var(--border)',
-                  background: algoKey === key ? 'var(--primary-glow)' : 'transparent',
-                  color: algoKey === key ? 'var(--primary)' : 'var(--text-secondary)',
-                  fontSize: 12, fontWeight: algoKey === key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s'
-                }}>{label}</button>
+                <button 
+                  key={key} 
+                  onClick={() => { setAlgoKey(key); setInput(DEFAULTS[key]); playback.reset() }} 
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: algoKey === key ? '#2e2e30' : '#1f1f1f',
+                    background: algoKey === key ? '#1c1c1e' : 'transparent',
+                    color: algoKey === key ? '#ffffff' : '#a1a1aa',
+                    fontSize: '12px',
+                    fontWeight: algoKey === key ? 600 : 400,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                >
+                  {label}
+                </button>
               ))}
             </div>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-              <input type="text" value={arrText} onChange={e => setArrText(e.target.value)}
-                placeholder="Array: 1,3,5,7..." style={{ padding: '5px 10px', width: 150, fontSize: 12 }} />
-              <input type="text" value={targetText} onChange={e => setTargetText(e.target.value)}
-                placeholder="Target" style={{ padding: '5px 10px', width: 80, fontSize: 12 }} />
-              <button onClick={() => {
-                const a = arrText.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n))
-                const t = parseInt(targetText)
-                if (a.length && !isNaN(t)) { setInput({ arr: a, target: t }); playback.reset() }
-              }} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>
+
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <input 
+                type="text" 
+                value={arrText} 
+                onChange={e => setArrText(e.target.value)}
+                placeholder="Array: 1,3,5,7..." 
+                style={{ 
+                  padding: '6px 10px', 
+                  width: 130, 
+                  fontSize: '12px',
+                  background: '#121212',
+                  border: '1px solid #1F1F1F',
+                  borderRadius: '8px',
+                  color: '#ffffff'
+                }} 
+              />
+              <input 
+                type="text" 
+                value={targetText} 
+                onChange={e => setTargetText(e.target.value)}
+                placeholder="Target" 
+                style={{ 
+                  padding: '6px 10px', 
+                  width: 70, 
+                  fontSize: '12px',
+                  background: '#121212',
+                  border: '1px solid #1F1F1F',
+                  borderRadius: '8px',
+                  color: '#ffffff'
+                }} 
+              />
+              <button 
+                onClick={() => {
+                  const a = arrText.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n))
+                  const t = parseInt(targetText)
+                  if (a.length && !isNaN(t)) { 
+                    setInput({ arr: a, target: t })
+                    playback.reset() 
+                  }
+                }} 
+                style={{ 
+                  padding: '6px 12px', 
+                  borderRadius: '8px', 
+                  border: '1px solid #1F1F1F', 
+                  background: '#121212', 
+                  color: '#a1a1aa', 
+                  fontSize: '12px', 
+                  cursor: 'pointer' 
+                }}
+              >
                 Apply
               </button>
             </div>
           </div>
 
-          {/* Canvas */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 64, padding: 64, background: 'var(--bg-canvas)' }}>
+          {/* Visualizer Card */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            padding: '40px 24px 24px 24px',
+            background: '#000000',
+            border: '1px solid #1F1F1F',
+            borderRadius: '16px',
+            position: 'relative',
+            overflow: 'hidden'
+          }}>
+            
+            {/* Visualizer Canvas Area */}
+            <div style={{ 
+              flex: 1, 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              gap: 40,
+              width: '100%',
+              marginBottom: 40
+            }}>
+              {/* Target badge */}
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ 
+                  fontSize: '11px', 
+                  color: '#71717a', 
+                  marginBottom: 10, 
+                  letterSpacing: '0.08em', 
+                  textTransform: 'uppercase', 
+                  fontWeight: 600 
+                }}>Target</div>
+                
+                <div style={{
+                  width: 80, 
+                  height: 80, 
+                  borderRadius: '16px', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center',
+                  background: 'rgba(255, 255, 255, 0.03)', 
+                  border: '2px solid #ffffff',
+                  fontSize: '32px', 
+                  fontFamily: 'JetBrains Mono, monospace', 
+                  fontWeight: 700, 
+                  color: '#ffffff',
+                  boxShadow: '0 0 24px rgba(255, 255, 255, 0.15)'
+                }}>
+                  {target}
+                </div>
+              </div>
 
-            {/* Target badge */}
-            <div style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>Target</div>
-              <div style={{
-                width: 96, height: 96, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                background: 'rgba(6,182,212,0.12)', border: '3px solid var(--current)',
-                fontSize: 40, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: 'var(--current)',
-                boxShadow: '0 0 32px rgba(6,182,212,0.3)'
-              }}>
-                {target}
+              {/* Pointer labels for binary search */}
+              {algoKey === 'binarySearch' && frame && (
+                <div style={{ display: 'flex', gap: arr.length > 15 ? 4 : 8, flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
+                  {arr.map((_, i) => {
+                    const isLeft = frame.left === i
+                    const isMid = frame.mid === i
+                    const isRight = frame.right === i
+                    return (
+                      <div key={i} style={{ width: arr.length > 15 ? 48 : 56, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                        <div style={{ height: 16, fontSize: '11px', fontFamily: 'JetBrains Mono, monospace', color: '#F97316', fontWeight: 700 }}>
+                          {isLeft ? 'L' : ''}
+                        </div>
+                        <div style={{ height: 16, fontSize: '12px', fontFamily: 'JetBrains Mono, monospace', color: '#ffffff', fontWeight: 700 }}>
+                          {isMid ? 'M' : ''}
+                        </div>
+                        <div style={{ height: 16, fontSize: '11px', fontFamily: 'JetBrains Mono, monospace', color: '#8B5CF6', fontWeight: 700 }}>
+                          {isRight ? 'R' : ''}
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Cell grid */}
+              <div style={{ display: 'flex', gap: arr.length > 15 ? 4 : 8, flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
+                {arr.map((val, i) => {
+                  const color = getColor(i)
+                  const isActive = frame?.mid === i || frame?.current === i
+                  const isFound = frame?.found === i
+                  const cellSize = arr.length > 15 ? 48 : 56
+                  
+                  return (
+                    <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                      <div style={{
+                        width: cellSize, 
+                        height: cellSize, 
+                        borderRadius: '12px',
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center',
+                        fontSize: arr.length > 15 ? '16px' : '18px', 
+                        fontFamily: 'JetBrains Mono, monospace', 
+                        fontWeight: 700,
+                        background: isActive ? 'rgba(255, 255, 255, 0.08)' : `${color}10`,
+                        border: `2px solid ${color}`,
+                        color: color === '#333333' ? '#52525b' : color,
+                        transform: isActive ? 'scale(1.15)' : 'scale(1)',
+                        boxShadow: isFound ? `0 0 20px ${color}55` : isActive ? `0 0 16px rgba(255, 255, 255, 0.2)` : 'none',
+                        transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                      }}>
+                        {val}
+                      </div>
+                      <span style={{ fontSize: '10px', fontFamily: 'JetBrains Mono, monospace', color: '#52525b', fontWeight: 500 }}>{i}</span>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Result banners */}
+              <div style={{ height: 48, display: 'flex', alignItems: 'center' }}>
+                {frame?.found >= 0 && (
+                  <div style={{ 
+                    padding: '8px 20px', 
+                    borderRadius: '8px', 
+                    fontSize: '13px', 
+                    fontWeight: 600, 
+                    background: 'rgba(16,185,129,0.08)', 
+                    color: '#10B981', 
+                    border: '1px solid rgba(16,185,129,0.3)' 
+                  }}>
+                    ✓ Found {target} at index {frame.found}
+                  </div>
+                )}
+                {frame?.found === -2 && (
+                  <div style={{ 
+                    padding: '8px 20px', 
+                    borderRadius: '8px', 
+                    fontSize: '13px', 
+                    fontWeight: 600, 
+                    background: 'rgba(239,68,68,0.08)', 
+                    color: '#EF4444', 
+                    border: '1px solid rgba(239,68,68,0.3)' 
+                  }}>
+                    ✗ {target} not found in array
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Pointer labels - binary search */}
-            {algoKey === 'binarySearch' && frame && (
-              <div style={{ display: 'flex', gap: arr.length > 15 ? 4 : 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: '1200px' }}>
-                {arr.map((_, i) => (
-                  <div key={i} style={{ width: arr.length > 15 ? 56 : 72, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                    <div style={{ height: 20, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--pointer-a)', fontWeight: 700 }}>
-                      {frame.left === i ? 'L' : ''}
-                    </div>
-                    <div style={{ height: 20, fontSize: 13, fontFamily: 'JetBrains Mono, monospace', color: 'var(--current)', fontWeight: 700 }}>
-                      {frame.mid === i ? 'M' : ''}
-                    </div>
-                    <div style={{ height: 20, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--pointer-b)', fontWeight: 700 }}>
-                      {frame.right === i ? 'R' : ''}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Array elements */}
-            <div style={{ display: 'flex', gap: arr.length > 15 ? 4 : 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: '1200px' }}>
-              {arr.map((val, i) => {
-                const color = getColor(i)
-                const isActive = frame?.mid === i || frame?.current === i
-                const isFound = frame?.found === i
-                const cellSize = arr.length > 15 ? 56 : 72
-                return (
-                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-                    <div style={{
-                      width: cellSize, height: cellSize, borderRadius: 14,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: arr.length > 15 ? 18 : 22, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
-                      background: `${color}18`,
-                      border: `3px solid ${color}`,
-                      color,
-                      transform: isActive ? 'scale(1.2)' : 'scale(1)',
-                      boxShadow: isFound ? `0 0 28px ${color}66` : isActive ? `0 0 20px ${color}55` : 'none',
-                      transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                    }}>
-                      {val}
-                    </div>
-                    <span style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: 'var(--text-muted)', fontWeight: 500 }}>{i}</span>
-                  </div>
-                )
-              })}
-            </div>
-
-            {/* Result */}
-            {frame?.found >= 0 && (
-              <div style={{ padding: '14px 28px', borderRadius: 12, fontSize: 15, fontWeight: 600, background: 'rgba(16,185,129,0.12)', color: 'var(--sorted)', border: '2px solid rgba(16,185,129,0.4)' }}>
-                ✓ Found {target} at index {frame.found}
-              </div>
-            )}
-            {frame?.found === -2 && (
-              <div style={{ padding: '14px 28px', borderRadius: 12, fontSize: 15, fontWeight: 600, background: 'rgba(239,68,68,0.12)', color: 'var(--swap)', border: '2px solid rgba(239,68,68,0.4)' }}>
-                ✗ {target} not found in array
-              </div>
-            )}
+            {/* Controls embedded */}
+            <PlaybackControls playback={playback} />
           </div>
 
-          <PlaybackControls playback={playback} />
         </div>
 
-        <div style={{ width: 300, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
-          <InfoPanel algoKey={algoKey} currentFrame={frame} />
+        {/* Right Info Widgets Column */}
+        <div style={{
+          width: 340,
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: 'auto',
+          flexShrink: 0,
+          paddingRight: 4
+        }}>
+          <InfoPanel algoKey={algoKey} currentFrame={frame} playback={playback} />
         </div>
+
       </div>
     </div>
   )

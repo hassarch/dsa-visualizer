@@ -17,7 +17,7 @@ const ALGOS = {
 }
 
 function randomArray(n = 20) {
-  return Array.from({ length: n }, () => Math.floor(Math.random() * 90) + 10)
+  return Array.from({ length: n }, () => Math.floor(Math.random() * 80) + 15)
 }
 
 export default function SortingPage() {
@@ -43,26 +43,25 @@ export default function SortingPage() {
   const sorted = new Set(frame?.sorted ?? [])
   const pivot = frame?.pivot
   const maxVal = Math.max(...arr, 1)
+
+  // Find index pairs for drawing connection lines
+  const activeIndices = [...frame?.comparing ?? [], ...frame?.swapping ?? []]
   
-  // Don't render until client-side hydration is complete
+  // Keyboard controls
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.target.tagName === 'INPUT') return
+      if (e.code === 'Space') { e.preventDefault(); playback.isPlaying ? playback.pause() : playback.play() }
+      if (e.code === 'ArrowRight') playback.stepForward()
+      if (e.code === 'ArrowLeft') playback.stepBack()
+      if (e.code === 'KeyR') playback.reset()
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [playback])
+
   if (!isClient) {
     return null
-  }
-
-  function getBarColor(i) {
-    if (sorted.has(i)) return 'var(--sorted)'
-    if (swapping.has(i)) return 'var(--swap)'
-    if (comparing.has(i)) return 'var(--compare)'
-    if (i === pivot) return 'var(--pointer-b)'
-    return 'var(--primary)'
-  }
-
-  function getBarGlow(i) {
-    if (swapping.has(i)) return `0 0 16px rgba(239,68,68,0.5)`
-    if (comparing.has(i)) return `0 0 16px rgba(245,158,11,0.5)`
-    if (i === pivot) return `0 0 16px rgba(139,92,246,0.5)`
-    if (sorted.has(i)) return `0 0 8px rgba(16,185,129,0.3)`
-    return 'none'
   }
 
   function handleShuffle() {
@@ -76,147 +75,308 @@ export default function SortingPage() {
     playback.reset()
   }
 
-  useEffect(() => {
-    const handler = (e) => {
-      if (e.target.tagName === 'INPUT') return
-      if (e.code === 'Space') { e.preventDefault(); playback.isPlaying ? playback.pause() : playback.play() }
-      if (e.code === 'ArrowRight') playback.stepForward()
-      if (e.code === 'ArrowLeft') playback.stepBack()
-      if (e.code === 'KeyR') playback.reset()
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [playback])
-
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-canvas)' }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: '#000000' }}>
       <Sidebar />
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
-
+      
+      {/* Dashboard container */}
+      <div style={{
+        display: 'flex',
+        flex: 1,
+        gap: 24,
+        padding: '24px',
+        overflow: 'hidden'
+      }}>
+        
+        {/* Main visualizer column */}
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          flex: 1,
+          minWidth: 0,
+          gap: 16
+        }}>
+          
           {/* Toolbar */}
-          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
-            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          <div style={{
+            padding: '12px 16px',
+            borderRadius: '12px',
+            border: '1px solid #1F1F1F',
+            background: '#050505',
+            display: 'flex',
+            flexWrap: 'wrap',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12
+          }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {Object.entries(ALGOS).map(([key, { label }]) => (
-                <button key={key} onClick={() => handleAlgoChange(key)} style={{
-                  padding: '5px 12px', borderRadius: 7, border: '1px solid',
-                  borderColor: algoKey === key ? 'var(--primary)' : 'var(--border)',
-                  background: algoKey === key ? 'var(--primary-glow)' : 'transparent',
-                  color: algoKey === key ? 'var(--primary)' : 'var(--text-secondary)',
-                  fontSize: 12, fontWeight: algoKey === key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s'
-                }}>
+                <button 
+                  key={key} 
+                  onClick={() => handleAlgoChange(key)} 
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid',
+                    borderColor: algoKey === key ? '#2e2e30' : '#1f1f1f',
+                    background: algoKey === key ? '#1c1c1e' : 'transparent',
+                    color: algoKey === key ? '#ffffff' : '#a1a1aa',
+                    fontSize: '12px',
+                    fontWeight: algoKey === key ? 600 : 400,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s'
+                  }}
+                >
                   {label}
                 </button>
               ))}
             </div>
-            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>n={size}</span>
-              <input type="range" min={5} max={50} value={size}
-                onChange={(e) => { setSize(+e.target.value); setInputArr(randomArray(+e.target.value)) }}
-                style={{ width: 80 }} />
-              <button onClick={handleShuffle} style={{
-                display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px',
-                borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-elevated)',
-                color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer'
-              }}>
-                <Shuffle size={13} /> Shuffle
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: '11px', color: '#71717a', fontFamily: 'JetBrains Mono, monospace' }}>n={size}</span>
+                <input 
+                  type="range" 
+                  min={5} 
+                  max={40} 
+                  value={size}
+                  onChange={(e) => { 
+                    setSize(+e.target.value)
+                    setInputArr(randomArray(+e.target.value))
+                    playback.reset()
+                  }}
+                  style={{ width: 80 }} 
+                />
+              </div>
+
+              <button 
+                onClick={handleShuffle} 
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '6px 12px',
+                  borderRadius: '8px',
+                  border: '1px solid #1F1F1F',
+                  background: '#121212',
+                  color: '#a1a1aa',
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  transition: 'color 0.15s'
+                }}
+              >
+                <Shuffle size={13} />
+                <span>Shuffle</span>
               </button>
-              <input type="text" value={inputText} onChange={e => setInputText(e.target.value)}
-                placeholder="5,3,8,1,9..." style={{ padding: '5px 10px', width: 130, fontSize: 12 }} />
-              <button onClick={() => {
-                const nums = inputText.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n))
-                if (nums.length > 1) { setInputArr(nums); playback.reset() }
-              }} style={{
-                padding: '5px 12px', borderRadius: 7, border: '1px solid var(--border)',
-                background: 'var(--bg-elevated)', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer'
-              }}>Apply</button>
+
+              <div style={{ display: 'flex', gap: 4 }}>
+                <input 
+                  type="text" 
+                  value={inputText} 
+                  onChange={e => setInputText(e.target.value)}
+                  placeholder="5,3,8,1,9..." 
+                  style={{ 
+                    padding: '6px 10px', 
+                    width: 100, 
+                    fontSize: '12px',
+                    background: '#121212',
+                    border: '1px solid #1F1F1F',
+                    borderRadius: '8px',
+                    color: '#ffffff'
+                  }} 
+                />
+                <button 
+                  onClick={() => {
+                    const nums = inputText.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n))
+                    if (nums.length > 1) { 
+                      setInputArr(nums)
+                      playback.reset()
+                    }
+                  }} 
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #1F1F1F',
+                    background: '#121212',
+                    color: '#a1a1aa',
+                    fontSize: '12px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Apply
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Bar chart */}
+          {/* Visualizer Card */}
           <div style={{
-            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
-            padding: '48px', background: 'var(--bg-canvas)', position: 'relative'
+            flex: 1,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            padding: '40px 24px 24px 24px',
+            background: '#000000',
+            border: '1px solid #1F1F1F',
+            borderRadius: '16px',
+            position: 'relative',
+            overflow: 'hidden'
           }}>
+            
+            {/* Visualizer Canvas Area */}
             <div style={{
-              display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-              gap: arr.length > 30 ? 2 : arr.length > 20 ? 4 : 6, 
-              height: '80%', maxWidth: '1400px', width: '100%'
+              flex: 1,
+              width: '100%',
+              position: 'relative',
+              display: 'flex',
+              alignItems: 'flex-end',
+              justifyContent: 'center',
+              marginBottom: 40
             }}>
-              {/* Grid lines */}
-              {[25, 50, 75, 100].map(pct => (
+              
+              {/* SVG Overlay for curved connection lines */}
+              {activeIndices.length === 2 && (
+                <svg 
+                  viewBox="0 0 100 100" 
+                  preserveAspectRatio="none"
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    pointerEvents: 'none',
+                    zIndex: 5
+                  }}
+                >
+                  {(() => {
+                    const idx1 = Math.min(activeIndices[0], activeIndices[1])
+                    const idx2 = Math.max(activeIndices[0], activeIndices[1])
+                    const N = arr.length
+                    
+                    const x1 = ((idx1 + 0.5) / N) * 100
+                    const x2 = ((idx2 + 0.5) / N) * 100
+                    
+                    // Height is proportional to 70% max
+                    const y1 = 100 - (arr[idx1] / maxVal) * 70
+                    const y2 = 100 - (arr[idx2] / maxVal) * 70
+                    
+                    // Curved line top height (slightly above the taller bar, capped at 10%)
+                    const y_curve = Math.max(10, Math.min(y1, y2) - 8)
+                    const r = Math.min(2.5, (x2 - x1) / 2) // corner radius
+
+                    return (
+                      <path 
+                        d={`M ${x1} ${y1} 
+                            L ${x1} ${y_curve + r} 
+                            Q ${x1} ${y_curve} ${x1 + r} ${y_curve} 
+                            L ${x2 - r} ${y_curve} 
+                            Q ${x2} ${y_curve} ${x2} ${y_curve + r} 
+                            L ${x2} ${y2}`} 
+                        stroke="#ffffff" 
+                        strokeWidth="1.5" 
+                        vectorEffect="non-scaling-stroke"
+                        fill="none" 
+                      />
+                    )
+                  })()}
+                </svg>
+              )}
+
+              {/* Grid lines (subtle dark lines) */}
+              {[25, 50, 75].map(pct => (
                 <div key={pct} style={{
                   position: 'absolute', left: 0, right: 0,
-                  bottom: `${pct * 0.8}%`,
-                  height: 1, background: 'var(--border)', opacity: 0.3, pointerEvents: 'none'
+                  bottom: `${pct}%`,
+                  height: 1, background: '#1F1F1F', opacity: 0.5, pointerEvents: 'none'
                 }} />
               ))}
 
-              {arr.map((val, i) => {
-                const color = getBarColor(i)
-                const isActive = comparing.has(i) || swapping.has(i) || i === pivot
-                const barWidth = Math.max(6, Math.min(64, 1200 / arr.length))
-                return (
-                  <div key={i} style={{ 
-                    flex: 1, 
-                    maxWidth: barWidth, 
-                    minWidth: 6, 
-                    display: 'flex', 
-                    flexDirection: 'column', 
-                    alignItems: 'center', 
-                    position: 'relative',
-                    height: '100%'
-                  }}>
-                    {arr.length <= 25 && (
+              {/* Bars chart */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'flex-end',
+                justifyContent: 'center',
+                width: '100%',
+                height: '100%',
+                zIndex: 2
+              }}>
+                {arr.map((val, i) => {
+                  const isActive = comparing.has(i) || swapping.has(i) || i === pivot
+                  const isSorted = sorted.has(i)
+                  
+                  // Dim inactive bars if there is an active operation going on
+                  const hasActiveOperation = comparing.size > 0 || swapping.size > 0 || pivot !== undefined
+                  const barOpacity = isActive ? 1 : hasActiveOperation ? 0.35 : 1
+
+                  // Width configuration
+                  const barWidthPercent = 100 / arr.length
+
+                  return (
+                    <div 
+                      key={i} 
+                      style={{ 
+                        width: `${barWidthPercent}%`,
+                        height: '100%',
+                        display: 'flex', 
+                        flexDirection: 'column', 
+                        alignItems: 'center',
+                        justifyContent: 'flex-end',
+                        padding: '0 4px',
+                        transition: 'opacity 0.2s',
+                        opacity: barOpacity
+                      }}
+                    >
+                      {/* Bar Value (Only render if array size is small enough to fit labels) */}
+                      {arr.length <= 22 && (
+                        <div style={{
+                          fontSize: '11px', 
+                          fontFamily: 'JetBrains Mono, monospace',
+                          color: '#ffffff', 
+                          marginBottom: 8, 
+                          fontWeight: 600,
+                          transition: 'color 0.2s'
+                        }}>
+                          {val}
+                        </div>
+                      )}
+
+                      {/* White Pill Bar */}
                       <div style={{
-                        fontSize: arr.length > 18 ? 11 : 14, 
-                        fontFamily: 'JetBrains Mono, monospace',
-                        color, 
-                        marginBottom: 8, 
-                        fontWeight: 700, 
-                        transition: 'color 0.2s'
-                      }}>
-                        {val}
-                      </div>
-                    )}
-                    <div style={{
-                      width: '100%', 
-                      borderRadius: '6px 6px 2px 2px',
-                      height: `${(val / maxVal) * 85}%`, 
-                      minHeight: 8,
-                      background: `linear-gradient(180deg, ${color} 0%, ${color}BB 100%)`,
-                      boxShadow: getBarGlow(i),
-                      transition: 'height 0.15s, background 0.2s, box-shadow 0.2s',
-                      transform: isActive ? 'scale(1.08)' : 'scale(1)',
-                    }} />
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Legend */}
-          <div style={{ display: 'flex', gap: 16, padding: '8px 20px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
-            {[
-              { color: 'var(--primary)', label: 'Unsorted' },
-              { color: 'var(--compare)', label: 'Comparing' },
-              { color: 'var(--swap)', label: 'Swapping' },
-              { color: 'var(--sorted)', label: 'Sorted' },
-              { color: 'var(--pointer-b)', label: 'Pivot' },
-            ].map(({ color, label }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: 10, height: 10, borderRadius: 3, background: color }} />
-                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{label}</span>
+                        width: '100%',
+                        maxWidth: 36,
+                        minHeight: 12,
+                        borderRadius: '9999px', // Fully rounded top and bottom
+                        height: `${(val / maxVal) * 70}%`, 
+                        background: '#ffffff',
+                        boxShadow: isActive ? '0 0 16px rgba(255,255,255,0.4)' : 'none',
+                        transition: 'height 0.15s, transform 0.2s, box-shadow 0.2s',
+                        transform: isActive ? 'scaleX(1.08)' : 'scale(1)',
+                      }} />
+                    </div>
+                  )
+                })}
               </div>
-            ))}
+            </div>
+
+            {/* Playback Controls embedded inside Visualizer Card */}
+            <PlaybackControls playback={playback} />
           </div>
 
-          <PlaybackControls playback={playback} />
         </div>
 
-        <div style={{ width: 300, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
-          <InfoPanel algoKey={algoKey} currentFrame={frame} />
+        {/* Right Info Widgets Column */}
+        <div style={{
+          width: 340,
+          display: 'flex',
+          flexDirection: 'column',
+          overflowY: 'auto',
+          flexShrink: 0,
+          paddingRight: 4 // prevent scrollbar overlaps
+        }}>
+          <InfoPanel algoKey={algoKey} currentFrame={frame} playback={playback} />
         </div>
+
       </div>
     </div>
   )

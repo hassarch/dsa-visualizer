@@ -1,131 +1,327 @@
 'use client'
 import { PSEUDOCODE, COMPLEXITY, PROBLEM_MAP } from '../data/problemMap'
-import { ExternalLink, Clock, Database, Zap, BookOpen, Code2 } from 'lucide-react'
+import { Clock, Database, Trophy, ArrowRight, ExternalLink } from 'lucide-react'
 
-const difficultyColor = { Easy: '#10B981', Medium: '#F59E0B', Hard: '#EF4444' }
-const difficultyBg = { Easy: 'rgba(16,185,129,0.08)', Medium: 'rgba(245,158,11,0.08)', Hard: 'rgba(239,68,68,0.08)' }
+function getActiveLine(algoKey, label) {
+  if (!label) return -1
+  const l = label.toLowerCase()
+  
+  switch(algoKey) {
+    case 'bubble':
+      if (l.includes('swapping')) return 3
+      if (l.includes('comparing')) return 2
+      return 0
+      
+    case 'selection':
+      if (l.includes('swapping') || l.includes('swapped')) return 5
+      if (l.includes('comparing')) return 2
+      if (l.includes('finding min') || l.includes('min:')) return 3
+      return 0
+      
+    case 'insertion':
+      if (l.includes('shifting')) return 4
+      if (l.includes('inserted')) return 6
+      if (l.includes('inserting') || l.includes('key =')) return 1
+      return 0
+      
+    case 'merge':
+      if (l.includes('splitting')) return 1
+      if (l.includes('merging') || l.includes('placed') || l.includes('copying')) return 4
+      return 0
+      
+    case 'quick':
+      if (l.includes('pivot =')) return 1
+      if (l.includes('vs pivot') || l.includes('comparing')) return 4
+      if (l.includes('swapping')) return 5
+      if (l.includes('final position') || l.includes('placed')) return 6
+      return 0
+      
+    case 'heap':
+      if (l.includes('moving max')) return 3
+      if (l.includes('heapifying')) return 4
+      if (l.includes('heapify')) return 1
+      return 0
+      
+    case 'binarySearch':
+      if (l.includes('found at index') || l.includes('found')) return 3
+      if (l.includes('mid =') || l.includes('mid')) return 2
+      if (l.includes('not found') || l.includes('not')) return 6
+      return 1
+      
+    case 'linearSearch':
+      if (l.includes('found')) return 2
+      if (l.includes('checking') || l.includes('comparing')) return 1
+      return 0
+      
+    case 'fibonacci':
+    case 'climbingStairs':
+      if (l.includes('calculating') || l.includes('dp[')) return 2
+      return 1
+      
+    case 'coinChange':
+      if (l.includes('updating') || l.includes('try coin') || l.includes('dp[')) return 4
+      return 2
+      
+    case 'knapsack':
+      if (l.includes('row') || l.includes('col') || l.includes('dp[')) return 3
+      return 1
 
-export default function InfoPanel({ algoKey, currentFrame }) {
+    default:
+      return -1
+  }
+}
+
+export default function InfoPanel({ algoKey, currentFrame, playback }) {
   const pseudo = PSEUDOCODE[algoKey] || []
   const complexity = COMPLEXITY[algoKey] || {}
   const problems = PROBLEM_MAP[algoKey] || []
+  
+  const activeLineIndex = getActiveLine(algoKey, currentFrame?.label)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflowY: 'auto', background: 'var(--bg-surface)' }}>
-
-      {/* Current step */}
-      <div style={{ padding: 16, borderBottom: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-          <Zap size={12} color="var(--current)" />
-          <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%' }}>
+      {/* Current Step Card */}
+      <div style={{
+        background: '#000000',
+        border: '1px solid #1F1F1F',
+        borderRadius: '16px',
+        padding: '24px',
+        position: 'relative',
+        minHeight: 120,
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'space-between'
+      }}>
+        <div>
+          <div style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            color: '#71717a',
+            textTransform: 'uppercase',
+            marginBottom: 12
+          }}>
             Current Step
-          </span>
+          </div>
+          <div style={{
+            fontSize: '14px',
+            color: '#ffffff',
+            lineHeight: 1.5,
+            fontWeight: 400
+          }}>
+            {currentFrame?.label || 'Press Play to begin.'}
+          </div>
         </div>
-        <div style={{
-          padding: '10px 12px', borderRadius: 8, minHeight: 52,
-          background: 'rgba(6,182,212,0.05)', border: '1px solid rgba(6,182,212,0.2)',
-          borderLeft: '3px solid var(--current)',
-          fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
-          color: 'var(--text-primary)', lineHeight: 1.5
-        }}>
-          {currentFrame?.label || <span style={{ color: 'var(--text-muted)' }}>Press Play to begin →</span>}
-        </div>
+        
+        {/* Step Forward Arrow in the bottom right corner */}
+        {playback && (
+          <button 
+            onClick={playback.stepForward}
+            disabled={playback.isDone}
+            style={{
+              position: 'absolute',
+              bottom: 20,
+              right: 20,
+              background: 'transparent',
+              border: 'none',
+              color: playback.isDone ? '#333333' : '#ffffff',
+              cursor: playback.isDone ? 'default' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.15s'
+            }}
+            title="Step Forward"
+          >
+            <ArrowRight size={18} />
+          </button>
+        )}
       </div>
 
-      {/* Pseudocode */}
+      {/* Pseudocode Card */}
       {pseudo.length > 0 && (
-        <div style={{ padding: 16, borderBottom: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-            <Code2 size={12} color="var(--text-muted)" />
-            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              Pseudocode
-            </span>
+        <div style={{
+          background: '#000000',
+          border: '1px solid #1F1F1F',
+          borderRadius: '16px',
+          padding: '24px'
+        }}>
+          <div style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            color: '#71717a',
+            textTransform: 'uppercase',
+            marginBottom: 16
+          }}>
+            Pseudocode
           </div>
-          <div style={{ borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg-canvas)' }}>
-            {pseudo.map((line, i) => (
-              <div key={i} style={{
-                padding: '4px 12px', display: 'flex', gap: 12,
-                borderBottom: i < pseudo.length - 1 ? '1px solid var(--border)' : 'none',
-                fontSize: 11, fontFamily: 'JetBrains Mono, monospace',
-              }}>
-                <span style={{ color: 'var(--text-muted)', minWidth: 16, textAlign: 'right', userSelect: 'none' }}>{i + 1}</span>
-                <span style={{ color: 'var(--text-secondary)', whiteSpace: 'pre' }}>{line}</span>
-              </div>
-            ))}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+            fontFamily: 'JetBrains Mono, monospace',
+            fontSize: '12px'
+          }}>
+            {pseudo.map((line, i) => {
+              const isActive = i === activeLineIndex
+              return (
+                <div 
+                  key={i} 
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '6px',
+                    background: isActive ? 'rgba(255, 255, 255, 0.06)' : 'transparent',
+                    color: isActive ? '#ffffff' : '#71717a',
+                    fontWeight: isActive ? 600 : 400,
+                    transition: 'all 0.2s',
+                    whiteSpace: 'pre',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}
+                >
+                  <span>{line}</span>
+                  {isActive && (
+                    <span style={{ fontSize: '9px', opacity: 0.5, color: '#a1a1aa' }}>
+                      // Current Operation
+                    </span>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}
 
-      {/* Complexity */}
+      {/* Complexity Card */}
       {complexity.time && (
-        <div style={{ padding: 16, borderBottom: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-            <Clock size={12} color="var(--text-muted)" />
-            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              Complexity
-            </span>
+        <div style={{
+          background: '#000000',
+          border: '1px solid #1F1F1F',
+          borderRadius: '16px',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 16
+        }}>
+          <div style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            color: '#71717a',
+            textTransform: 'uppercase'
+          }}>
+            Complexity
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-            {[
-              { icon: Clock, label: 'Time', value: complexity.time, color: 'var(--compare)' },
-              { icon: Database, label: 'Space', value: complexity.space, color: 'var(--visited)' },
-            ].map(({ label, value, color }) => (
-              <div key={label} style={{ padding: '10px 12px', borderRadius: 8, background: 'var(--bg-canvas)', border: '1px solid var(--border)' }}>
-                <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>{label}</div>
-                <div style={{ fontSize: 15, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color }}>{value}</div>
+          
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Time Complexity */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#a1a1aa', fontSize: '13px' }}>
+                <Clock size={16} style={{ strokeWidth: 2 }} />
+                <span>Time Complexity:</span>
               </div>
-            ))}
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, color: '#ffffff', fontSize: '14px' }}>
+                {complexity.time}
+              </span>
+            </div>
+
+            {/* Space Complexity */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#a1a1aa', fontSize: '13px' }}>
+                <Database size={16} style={{ strokeWidth: 2 }} />
+                <span>Space Complexity:</span>
+              </div>
+              <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, color: '#ffffff', fontSize: '14px' }}>
+                {complexity.space}
+              </span>
+            </div>
+
+            {/* Best Case */}
+            {complexity.best && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: '#a1a1aa', fontSize: '13px' }}>
+                  <Trophy size={16} style={{ strokeWidth: 2 }} />
+                  <span>Best Case:</span>
+                </div>
+                <span style={{ fontFamily: 'JetBrains Mono, monospace', fontWeight: 600, color: '#ffffff', fontSize: '14px' }}>
+                  {complexity.best}
+                </span>
+              </div>
+            )}
           </div>
-          {complexity.best && (
-            <div style={{ padding: '6px 10px', borderRadius: 6, background: 'var(--bg-canvas)', border: '1px solid var(--border)', fontSize: 11, color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
-              Best: <span style={{ color: 'var(--sorted)' }}>{complexity.best}</span>
-            </div>
-          )}
-          {complexity.note && (
-            <div style={{ marginTop: 6, padding: '6px 10px', borderRadius: 6, background: 'rgba(6,182,212,0.05)', border: '1px solid rgba(6,182,212,0.15)', fontSize: 11, color: 'var(--current)' }}>
-              💡 {complexity.note}
-            </div>
-          )}
         </div>
       )}
 
-      {/* LeetCode problems */}
+      {/* LeetCode Problems Card */}
       {problems.length > 0 && (
-        <div style={{ padding: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-            <BookOpen size={12} color="var(--text-muted)" />
-            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              LeetCode Problems
-            </span>
+        <div style={{
+          background: '#000000',
+          border: '1px solid #1F1F1F',
+          borderRadius: '16px',
+          padding: '24px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 12
+        }}>
+          <div style={{
+            fontSize: '11px',
+            fontWeight: 600,
+            letterSpacing: '0.08em',
+            color: '#71717a',
+            textTransform: 'uppercase'
+          }}>
+            LeetCode Problems
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {problems.map((p) => (
-              <a key={p.id} href={p.url} target="_blank" rel="noopener noreferrer" style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 12px', borderRadius: 8, textDecoration: 'none',
-                background: 'var(--bg-canvas)', border: '1px solid var(--border)',
-                transition: 'border-color 0.15s'
-              }}>
+              <a 
+                key={p.id} 
+                href={p.url} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                style={{
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  padding: '12px 14px', 
+                  borderRadius: '10px', 
+                  textDecoration: 'none',
+                  background: '#121212', 
+                  border: '1px solid #1F1F1F',
+                  transition: 'all 0.15s',
+                  color: '#ffffff'
+                }}
+              >
                 <div>
-                  <div style={{ fontSize: 12, marginBottom: 3 }}>
-                    <span style={{ color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>#{p.id} </span>
-                    <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{p.title}</span>
+                  <div style={{ fontSize: '12px', marginBottom: 2 }}>
+                    <span style={{ color: '#71717a', fontFamily: 'JetBrains Mono, monospace' }}>#{p.id} </span>
+                    <span style={{ fontWeight: 500 }}>{p.title}</span>
                   </div>
                   <span style={{
-                    fontSize: 10, padding: '2px 6px', borderRadius: 4,
-                    background: 'var(--bg-elevated)', color: 'var(--text-muted)'
+                    fontSize: '9px', 
+                    padding: '2px 6px', 
+                    borderRadius: '4px',
+                    background: '#1c1c1e', 
+                    color: '#71717a'
                   }}>
                     {p.pattern}
                   </span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <span style={{
-                    fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 10,
-                    background: difficultyBg[p.difficulty], color: difficultyColor[p.difficulty]
+                    fontSize: '9px', 
+                    fontWeight: 600, 
+                    padding: '2px 8px', 
+                    borderRadius: '999px',
+                    background: 'rgba(255,255,255,0.06)', 
+                    color: '#a1a1aa',
+                    border: '1px solid #1F1F1F'
                   }}>
                     {p.difficulty}
                   </span>
-                  <ExternalLink size={11} color="var(--text-muted)" />
+                  <ExternalLink size={10} color="#71717a" />
                 </div>
               </a>
             ))}
