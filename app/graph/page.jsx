@@ -37,15 +37,19 @@ export default function GraphPage() {
   const queue = frame?.queue ?? []
   const stack = frame?.stack ?? []
   const current = frame?.current
+  const frontier = new Set([...queue, ...stack])
 
   function getNodeColor(node) {
-    if (node === current) return '#ffffff' // Current (White)
-    if (visited.has(node)) return '#38BDF8' // Visited (Cyan)
-    return '#a1a1aa' // Default (Grey)
+    if (node === current) return '#FBBF24' // Current (Amber)
+    if (frontier.has(node) && !visited.has(node)) return '#38BDF8' // In queue/stack (Cyan)
+    if (visited.has(node)) return '#34D399' // Visited (Emerald)
+    return '#52525b' // Default (Dim grey)
   }
 
-  function getEdgeVisited(u, v) {
-    return visited.has(u) && visited.has(v)
+  function getEdgeColor(u, v) {
+    if ((u === current && visited.has(v)) || (v === current && visited.has(u))) return '#FBBF24'
+    if (visited.has(u) && visited.has(v)) return '#34D399'
+    return '#1F1F1F'
   }
 
   useEffect(() => {
@@ -155,13 +159,14 @@ export default function GraphPage() {
                   {/* Edges */}
                   {DEFAULT_GRAPH.edges.map(([u, v]) => {
                     const pu = NODE_POSITIONS[u], pv = NODE_POSITIONS[v]
-                    const isVisited = getEdgeVisited(u, v)
+                    const edgeColor = getEdgeColor(u, v)
+                    const isActive = edgeColor !== '#1F1F1F'
                     return (
                       <line key={`${u}-${v}`}
                         x1={pu.x} y1={pu.y} x2={pv.x} y2={pv.y}
-                        stroke={isVisited ? '#38BDF8' : '#1F1F1F'}
-                        strokeWidth={isVisited ? 3 : 2}
-                        opacity={isVisited ? 1 : 0.4}
+                        stroke={edgeColor}
+                        strokeWidth={isActive ? 3 : 2}
+                        opacity={isActive ? 1 : 0.3}
                         style={{ transition: 'all 0.4s' }}
                       />
                     )
@@ -173,27 +178,28 @@ export default function GraphPage() {
                     const color = getNodeColor(node)
                     const isActive = node === current
                     const isVisited = visited.has(node)
+                    const isFrontier = frontier.has(node) && !isVisited
 
                     return (
                       <g key={node}>
                         {/* Glow ring for active */}
                         {isActive && (
                           <circle cx={pos.x} cy={pos.y} r={48}
-                            fill="none" stroke={color} strokeWidth={1.5} opacity={0.2}
+                            fill="none" stroke={color} strokeWidth={1.5} opacity={0.3}
                             filter="url(#node-glow)" />
                         )}
 
                         {/* Node circle */}
                         <circle cx={pos.x} cy={pos.y} r={isActive ? 38 : 32}
-                          fill={isActive || isVisited ? 'rgba(255,255,255,0.03)' : 'transparent'}
+                          fill={isActive ? 'rgba(251,191,36,0.06)' : isFrontier ? 'rgba(56,189,248,0.04)' : isVisited ? 'rgba(52,211,153,0.04)' : 'transparent'}
                           stroke={color}
-                          strokeWidth={isActive ? 3 : isVisited ? 2 : 1.5}
+                          strokeWidth={isActive ? 3 : isVisited || isFrontier ? 2 : 1.5}
                           style={{ transition: 'all 0.3s', filter: isActive ? 'url(#node-glow)' : 'none' }}
                         />
 
                         {/* Node label */}
                         <text x={pos.x} y={pos.y + 8} textAnchor="middle"
-                          fill={color === '#a1a1aa' && !isVisited ? '#ffffff' : color} 
+                          fill={color === '#52525b' ? '#71717a' : color} 
                           fontSize={isActive ? '22px' : '18px'} 
                           fontWeight="700"
                           fontFamily="JetBrains Mono, monospace"
@@ -277,9 +283,9 @@ export default function GraphPage() {
                         fontSize: '12px', 
                         fontFamily: 'JetBrains Mono, monospace', 
                         fontWeight: 700,
-                        background: 'rgba(56, 189, 248, 0.08)', 
-                        border: '1.5px solid #38BDF8', 
-                        color: '#38BDF8',
+                        background: 'rgba(52, 211, 153, 0.08)', 
+                        border: '1.5px solid #34D399', 
+                        color: '#34D399',
                         animation: 'fadeUp 0.3s ease forwards'
                       }}>
                         {n}

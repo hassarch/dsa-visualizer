@@ -223,6 +223,37 @@ export default function SortingPage() {
             overflow: 'hidden'
           }}>
             
+            {/* Color Legend */}
+            <div style={{ 
+              display: 'flex', 
+              gap: 20, 
+              justifyContent: 'center', 
+              marginBottom: 12,
+              flexWrap: 'wrap'
+            }}>
+              {[
+                { label: 'Comparing', color: '#FBBF24' },
+                { label: 'Swapping', color: '#38BDF8' },
+                { label: 'Pivot', color: '#A78BFA' },
+                { label: 'Sorted', color: '#34D399' },
+              ].map(({ label, color }) => (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ 
+                    width: 8, height: 8, borderRadius: '50%', 
+                    background: color,
+                    boxShadow: `0 0 6px ${color}66`
+                  }} />
+                  <span style={{ 
+                    fontSize: '10px', 
+                    color: '#71717a', 
+                    fontWeight: 600, 
+                    letterSpacing: '0.05em', 
+                    textTransform: 'uppercase' 
+                  }}>{label}</span>
+                </div>
+              ))}
+            </div>
+            
             {/* Visualizer Canvas Area */}
             <div style={{
               flex: 1,
@@ -265,6 +296,9 @@ export default function SortingPage() {
                     const y_curve = Math.max(10, Math.min(y1, y2) - 8)
                     const r = Math.min(2.5, (x2 - x1) / 2) // corner radius
 
+                    // Color arc by operation type
+                    const arcColor = swapping.size > 0 ? '#38BDF8' : '#FBBF24'
+
                     return (
                       <path 
                         d={`M ${x1} ${y1} 
@@ -273,10 +307,11 @@ export default function SortingPage() {
                             L ${x2 - r} ${y_curve} 
                             Q ${x2} ${y_curve} ${x2} ${y_curve + r} 
                             L ${x2} ${y2}`} 
-                        stroke="#ffffff" 
+                        stroke={arcColor} 
                         strokeWidth="1.5" 
                         vectorEffect="non-scaling-stroke"
-                        fill="none" 
+                        fill="none"
+                        opacity={0.7}
                       />
                     )
                   })()}
@@ -302,12 +337,38 @@ export default function SortingPage() {
                 zIndex: 2
               }}>
                 {arr.map((val, i) => {
-                  const isActive = comparing.has(i) || swapping.has(i) || i === pivot
+                  const isComparing = comparing.has(i)
+                  const isSwapping = swapping.has(i)
+                  const isPivot = i === pivot
                   const isSorted = sorted.has(i)
+                  const isActive = isComparing || isSwapping || isPivot
                   
                   // Dim inactive bars if there is an active operation going on
                   const hasActiveOperation = comparing.size > 0 || swapping.size > 0 || pivot !== undefined
-                  const barOpacity = isActive ? 1 : hasActiveOperation ? 0.35 : 1
+                  const barOpacity = isActive ? 1 : isSorted ? 0.9 : hasActiveOperation ? 0.3 : 1
+
+                  // State-based colors
+                  let barColor = '#ffffff'
+                  let barGlow = 'none'
+                  let labelColor = '#71717a'
+
+                  if (isSwapping) {
+                    barColor = '#38BDF8'      // Cyan for swap
+                    barGlow = '0 0 20px rgba(56, 189, 248, 0.5)'
+                    labelColor = '#38BDF8'
+                  } else if (isComparing) {
+                    barColor = '#FBBF24'      // Amber for compare
+                    barGlow = '0 0 20px rgba(251, 191, 36, 0.5)'
+                    labelColor = '#FBBF24'
+                  } else if (isPivot) {
+                    barColor = '#A78BFA'      // Purple for pivot
+                    barGlow = '0 0 20px rgba(167, 139, 250, 0.5)'
+                    labelColor = '#A78BFA'
+                  } else if (isSorted) {
+                    barColor = '#34D399'      // Emerald for sorted
+                    barGlow = 'none'
+                    labelColor = '#34D399'
+                  }
 
                   // Width configuration
                   const barWidthPercent = 100 / arr.length
@@ -323,7 +384,7 @@ export default function SortingPage() {
                         alignItems: 'center',
                         justifyContent: 'flex-end',
                         padding: '0 4px',
-                        transition: 'opacity 0.2s',
+                        transition: 'opacity 0.25s ease',
                         opacity: barOpacity
                       }}
                     >
@@ -332,7 +393,7 @@ export default function SortingPage() {
                         <div style={{
                           fontSize: '11px', 
                           fontFamily: 'JetBrains Mono, monospace',
-                          color: '#ffffff', 
+                          color: labelColor, 
                           marginBottom: 8, 
                           fontWeight: 600,
                           transition: 'color 0.2s'
@@ -341,17 +402,17 @@ export default function SortingPage() {
                         </div>
                       )}
 
-                      {/* White Pill Bar */}
+                      {/* Colored Pill Bar */}
                       <div style={{
                         width: '100%',
                         maxWidth: 36,
                         minHeight: 12,
-                        borderRadius: '9999px', // Fully rounded top and bottom
+                        borderRadius: '9999px',
                         height: `${(val / maxVal) * 70}%`, 
-                        background: '#ffffff',
-                        boxShadow: isActive ? '0 0 16px rgba(255,255,255,0.4)' : 'none',
-                        transition: 'height 0.15s, transform 0.2s, box-shadow 0.2s',
-                        transform: isActive ? 'scaleX(1.08)' : 'scale(1)',
+                        background: barColor,
+                        boxShadow: barGlow,
+                        transition: 'height 0.15s, transform 0.2s, box-shadow 0.25s, background 0.25s',
+                        transform: isActive ? 'scaleX(1.1)' : 'scale(1)',
                       }} />
                     </div>
                   )

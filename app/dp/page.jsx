@@ -158,9 +158,9 @@ function OneDTable({ frame }) {
   const highlight = new Set(frame?.highlight ?? [])
 
   function getCellColor(i) {
-    if (i === current) return '#ffffff' // Current comparing (White)
+    if (i === current) return '#FBBF24' // Current computing (Amber)
     if (deps.has(i) || highlight.has(i)) return '#38BDF8' // Dependency (Cyan)
-    if (dp[i] !== null && dp[i] !== undefined && dp[i] !== Infinity) return '#a1a1aa' // Filled (zinc-400)
+    if (dp[i] !== null && dp[i] !== undefined && dp[i] !== Infinity) return '#34D399' // Filled (Emerald)
     return '#333333' // Empty (Dark zinc)
   }
 
@@ -193,7 +193,7 @@ function OneDTable({ frame }) {
             <div key={i} style={{
               width: cellSize, textAlign: 'center', fontSize: '11px',
               fontFamily: 'JetBrains Mono, monospace',
-              color: deps.has(i) ? '#38BDF8' : i === current ? '#ffffff' : '#52525b',
+              color: deps.has(i) ? '#38BDF8' : i === current ? '#FBBF24' : '#52525b',
               fontWeight: i === current ? 700 : 500
             }}>{i}</div>
           ))}
@@ -209,11 +209,11 @@ function OneDTable({ frame }) {
                 width: cellSize, height: cellSize, borderRadius: '10px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 fontSize, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
-                background: isCurrent ? 'rgba(255, 255, 255, 0.08)' : color === '#333333' ? 'transparent' : 'rgba(255, 255, 255, 0.03)',
+                background: isCurrent ? 'rgba(251, 191, 36, 0.1)' : deps.has(i) ? 'rgba(56, 189, 248, 0.06)' : color === '#34D399' ? 'rgba(52, 211, 153, 0.04)' : 'transparent',
                 border: `2px solid ${color}`,
-                color: color === '#333333' ? '#333333' : '#ffffff',
+                color: color === '#333333' ? '#333333' : color === '#34D399' ? '#34D399' : '#ffffff',
                 transform: isCurrent ? 'scale(1.15) translateY(-4px)' : 'scale(1)',
-                boxShadow: isCurrent ? `0 8px 20px rgba(255, 255, 255, 0.2)` : deps.has(i) ? `0 0 12px rgba(56, 189, 248, 0.15)` : 'none',
+                boxShadow: isCurrent ? '0 8px 20px rgba(251, 191, 36, 0.3)' : deps.has(i) ? '0 0 12px rgba(56, 189, 248, 0.2)' : 'none',
                 transition: 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
                 zIndex: isCurrent ? 2 : 1, position: 'relative'
               }}>
@@ -303,11 +303,11 @@ function KnapsackTable({ frame }) {
                         justifyContent: 'center',
                         fontSize: '14px', 
                         fontWeight: isCurrent ? 700 : 500,
-                        background: isCurrent ? 'rgba(255,255,255,0.08)' : isRowCol ? 'rgba(56,189,248,0.04)' : 'transparent',
-                        border: `1.5px solid ${isCurrent ? '#ffffff' : isRowCol ? 'rgba(56,189,248,0.2)' : '#1F1F1F'}`,
-                        color: isCurrent ? '#ffffff' : val > 0 ? '#38BDF8' : '#52525b',
+                        background: isCurrent ? 'rgba(251,191,36,0.1)' : isRowCol ? 'rgba(56,189,248,0.04)' : 'transparent',
+                        border: `1.5px solid ${isCurrent ? '#FBBF24' : isRowCol ? 'rgba(56,189,248,0.3)' : '#1F1F1F'}`,
+                        color: isCurrent ? '#FBBF24' : val > 0 ? '#34D399' : '#52525b',
                         transform: isCurrent ? 'scale(1.15)' : 'scale(1)',
-                        boxShadow: isCurrent ? '0 0 12px rgba(255,255,255,0.2)' : 'none',
+                        boxShadow: isCurrent ? '0 0 16px rgba(251,191,36,0.3)' : 'none',
                         transition: 'all 0.25s',
                       }}>
                         {val}

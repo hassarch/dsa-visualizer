@@ -1,27 +1,31 @@
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { usePlayback } from '../../hooks/usePlayback'
-import { runArrayCode, CODE_TEMPLATES } from '../../engines/arrayEngine'
+import { runArrayCode, DEFAULT_TEMPLATES } from '../../engines/arrayEngine'
 import PlaybackControls from '../../components/PlaybackControls'
 import Sidebar from '../../components/Sidebar'
-import { Settings, ArrowRight, Code, List } from 'lucide-react'
+import { Settings, ArrowRight, Code, List, Plus, X } from 'lucide-react'
 
 export default function ArraysPage() {
-  const [templateKey, setTemplateKey] = useState('reverse')
-  const [code, setCode] = useState(CODE_TEMPLATES.reverse)
+  const [language, setLanguage] = useState('javascript')
+  const [code, setCode] = useState(DEFAULT_TEMPLATES.javascript)
   const [arrText, setArrText] = useState('10, 25, 45, 12, 6, 30')
+  const [arr2Text, setArr2Text] = useState('3, 8, 15')
+  const [useArr2, setUseArr2] = useState(false)
   
   // Tracing input state that triggers rebuilding usePlayback
   const [input, setInput] = useState({
     arr: [10, 25, 45, 12, 6, 30],
-    code: CODE_TEMPLATES.reverse,
+    arr2: null,
+    code: DEFAULT_TEMPLATES.javascript,
+    language: 'javascript',
     trigger: 0
   })
 
   // Generator wrapper that executes custom array code and yields logged frames
   const genFn = useCallback((inp) => {
     return (function* () {
-      const frames = runArrayCode(inp.code, inp.arr)
+      const frames = runArrayCode(inp.code, inp.arr, inp.language, inp.arr2)
       for (const f of frames) {
         yield f
       }
@@ -31,27 +35,31 @@ export default function ArraysPage() {
   const playback = usePlayback(genFn, input)
   const frame = playback.currentFrame
   const arr = frame?.array ?? input.arr
+  const arr2 = frame?.array2 ?? input.arr2
   
   const comparing = new Set(frame?.comparing ?? [])
   const swapping = new Set(frame?.swapping ?? [])
+  const activeArray = frame?.activeArray ?? 'arr'
 
   // Automatically trace and update visualizer on code or array text change
   useEffect(() => {
     const initialArr = arrText.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n))
     const arrayInput = initialArr.length > 0 ? initialArr : [1, 2, 3, 4, 5]
+    
+    let array2Input = null
+    if (useArr2) {
+      const parsed = arr2Text.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n))
+      array2Input = parsed.length > 0 ? parsed : [1, 2, 3]
+    }
 
     setInput({
       arr: arrayInput,
+      arr2: array2Input,
       code: code,
+      language: language,
       trigger: Date.now()
     })
-  }, [code, arrText])
-
-  // Handle template selection
-  function handleTemplateChange(key) {
-    setTemplateKey(key)
-    setCode(CODE_TEMPLATES[key])
-  }
+  }, [code, arrText, arr2Text, language, useArr2])
 
   // Keyboard controls
   useEffect(() => {
@@ -95,34 +103,11 @@ export default function ArraysPage() {
             background: '#050505',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'space-between',
+            justifyContent: 'flex-start',
             gap: 12
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: '12px', color: '#71717a', fontWeight: 500 }}>Select Algorithm Template:</span>
-              <select 
-                value={templateKey} 
-                onChange={(e) => handleTemplateChange(e.target.value)}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '8px',
-                  border: '1px solid #1F1F1F',
-                  background: '#121212',
-                  color: '#ffffff',
-                  fontSize: '12px',
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
-              >
-                <option value="reverse">Reverse Array</option>
-                <option value="findMax">Find Maximum Value</option>
-                <option value="rotate">Rotate Left by 1</option>
-                <option value="bubbleSort">Bubble Sort</option>
-              </select>
-            </div>
-
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <span style={{ fontSize: '12px', color: '#71717a' }}>Array:</span>
+              <span style={{ fontSize: '12px', color: '#71717a', fontWeight: 500 }}>arr:</span>
               <input 
                 type="text" 
                 value={arrText} 
@@ -130,7 +115,7 @@ export default function ArraysPage() {
                 placeholder="10, 20, 30..." 
                 style={{ 
                   padding: '6px 10px', 
-                  width: 200, 
+                  width: 180, 
                   fontSize: '12px',
                   background: '#121212',
                   border: '1px solid #1F1F1F',
@@ -139,6 +124,65 @@ export default function ArraysPage() {
                 }} 
               />
             </div>
+            
+            {/* Second array input */}
+            {useArr2 ? (
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <span style={{ fontSize: '12px', color: '#71717a', fontWeight: 500 }}>arr2:</span>
+                <input 
+                  type="text" 
+                  value={arr2Text} 
+                  onChange={e => setArr2Text(e.target.value)}
+                  placeholder="3, 8, 15..." 
+                  style={{ 
+                    padding: '6px 10px', 
+                    width: 160, 
+                    fontSize: '12px',
+                    background: '#121212',
+                    border: '1px solid #1F1F1F',
+                    borderRadius: '8px',
+                    color: '#ffffff'
+                  }} 
+                />
+                <button
+                  onClick={() => setUseArr2(false)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    color: '#71717a',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: 2
+                  }}
+                  title="Remove second array"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setUseArr2(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '4px 10px',
+                  fontSize: '11px',
+                  fontWeight: 500,
+                  background: '#121212',
+                  border: '1px solid #1F1F1F',
+                  borderRadius: '8px',
+                  color: '#71717a',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s'
+                }}
+                title="Add a second input array (for problems like Median of Two Sorted Arrays)"
+              >
+                <Plus size={12} />
+                <span>arr2</span>
+              </button>
+            )}
           </div>
 
           {/* Visualizer Card */}
@@ -164,11 +208,13 @@ export default function ArraysPage() {
               width: '100%',
               marginBottom: 40
             }}>
-              {/* Array items horizontally centered */}
-              <div style={{ display: 'flex', gap: arr.length > 15 ? 4 : 8, flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
+              {/* Primary array */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%' }}>
+                {arr2 && <span style={{ fontSize: '10px', color: '#71717a', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>arr (nums1)</span>}
+                <div style={{ display: 'flex', gap: arr.length > 15 ? 4 : 8, flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
                 {arr.map((val, i) => {
-                  const isComparing = comparing.has(i)
-                  const isSwapping = swapping.has(i)
+                  const isComparing = activeArray === 'arr' && comparing.has(i)
+                  const isSwapping = activeArray === 'arr' && swapping.has(i)
                   const cellSize = arr.length > 15 ? 46 : 54
 
                   // Color configuration
@@ -178,14 +224,15 @@ export default function ArraysPage() {
                   let glow = 'none'
 
                   if (isComparing) {
-                    border = '#ffffff'
-                    background = 'rgba(255, 255, 255, 0.08)'
-                    glow = '0 0 16px rgba(255, 255, 255, 0.2)'
+                    border = '#FBBF24'
+                    background = 'rgba(251, 191, 36, 0.08)'
+                    textColor = '#FBBF24'
+                    glow = '0 0 16px rgba(251, 191, 36, 0.3)'
                   } else if (isSwapping) {
                     border = '#38BDF8'
                     background = 'rgba(56, 189, 248, 0.08)'
                     textColor = '#38BDF8'
-                    glow = '0 0 16px rgba(56, 189, 248, 0.2)'
+                    glow = '0 0 16px rgba(56, 189, 248, 0.3)'
                   }
 
                   return (
@@ -213,7 +260,64 @@ export default function ArraysPage() {
                     </div>
                   )
                 })}
+                </div>
               </div>
+              
+              {/* Second array (if present) */}
+              {arr2 && (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%', marginTop: 20 }}>
+                  <span style={{ fontSize: '10px', color: '#71717a', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase' }}>arr2 (nums2)</span>
+                  <div style={{ display: 'flex', gap: arr2.length > 15 ? 4 : 8, flexWrap: 'wrap', justifyContent: 'center', width: '100%' }}>
+                  {arr2.map((val, i) => {
+                    const isComparing = activeArray === 'arr2' && comparing.has(i)
+                    const isSwapping = activeArray === 'arr2' && swapping.has(i)
+                    const cellSize = arr2.length > 15 ? 46 : 54
+
+                    let border = '#1F1F1F'
+                    let background = 'transparent'
+                    let textColor = '#a78bfa'
+                    let glow = 'none'
+
+                    if (isComparing) {
+                      border = '#FBBF24'
+                      background = 'rgba(251, 191, 36, 0.08)'
+                      textColor = '#FBBF24'
+                      glow = '0 0 16px rgba(251, 191, 36, 0.3)'
+                    } else if (isSwapping) {
+                      border = '#38BDF8'
+                      background = 'rgba(56, 189, 248, 0.08)'
+                      textColor = '#38BDF8'
+                      glow = '0 0 16px rgba(56, 189, 248, 0.3)'
+                    }
+
+                    return (
+                      <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                        <div style={{
+                          width: cellSize, 
+                          height: cellSize, 
+                          borderRadius: '10px',
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center',
+                          fontSize: arr2.length > 15 ? '15px' : '17px', 
+                          fontFamily: 'JetBrains Mono, monospace', 
+                          fontWeight: 700,
+                          background,
+                          border: `2px solid ${border}`,
+                          color: textColor,
+                          transform: isComparing || isSwapping ? 'scale(1.12)' : 'scale(1)',
+                          boxShadow: glow,
+                          transition: 'all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                        }}>
+                          {val}
+                        </div>
+                        <span style={{ fontSize: '9px', fontFamily: 'JetBrains Mono, monospace', color: '#52525b', fontWeight: 500 }}>{i}</span>
+                      </div>
+                    )
+                  })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Playback Controls */}
@@ -297,17 +401,47 @@ export default function ArraysPage() {
             gap: 12
           }}>
             <div style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              letterSpacing: '0.08em',
-              color: '#71717a',
-              textTransform: 'uppercase',
               display: 'flex',
+              justifyContent: 'space-between',
               alignItems: 'center',
-              gap: 6
+              width: '100%'
             }}>
-              <Code size={13} />
-              <span>Source Code</span>
+              <div style={{
+                fontSize: '11px',
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                color: '#71717a',
+                textTransform: 'uppercase',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}>
+                <Code size={13} />
+                <span>Source Code</span>
+              </div>
+              <select
+                value={language}
+                onChange={(e) => {
+                  const lang = e.target.value
+                  setLanguage(lang)
+                  setCode(DEFAULT_TEMPLATES[lang])
+                }}
+                style={{
+                  background: '#121212',
+                  border: '1px solid #1F1F1F',
+                  borderRadius: '6px',
+                  color: '#ffffff',
+                  fontSize: '11px',
+                  padding: '4px 8px',
+                  outline: 'none',
+                  cursor: 'pointer',
+                  fontWeight: 500
+                }}
+              >
+                <option value="javascript">JavaScript</option>
+                <option value="python">Python</option>
+                <option value="java">Java</option>
+              </select>
             </div>
             
             <textarea 
@@ -327,7 +461,13 @@ export default function ArraysPage() {
                 resize: 'vertical',
                 lineHeight: 1.5
               }}
-              placeholder="// Write your JavaScript array code here..."
+              placeholder={
+                language === 'javascript'
+                  ? "// Write your JavaScript array code here..."
+                  : language === 'python'
+                    ? "# Write your Python array code here..."
+                    : "// Write your Java array code here..."
+              }
             />
           </div>
 
