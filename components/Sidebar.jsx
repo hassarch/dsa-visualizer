@@ -1,11 +1,12 @@
 'use client'
 import { usePathname, useRouter } from 'next/navigation'
-import { ArrowDownNarrowWide, Search, GitBranch, LayoutGrid, Layers, Settings, Menu } from 'lucide-react'
+import { ArrowDownNarrowWide, Search, GitBranch, LayoutGrid, Layers, Settings, Menu, Columns4 } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 
 const NAV = [
   { id: 'sorting', label: 'Sorting', icon: ArrowDownNarrowWide, path: '/sorting' },
   { id: 'search', label: 'Searching', icon: Search, path: '/search' },
+  { id: 'arrays', label: 'Arrays', icon: Columns4, path: '/arrays' },
   { id: 'graph', label: 'Graph Algorithms', icon: GitBranch, path: '/graph' },
   { id: 'dp', label: 'Dynamic Programming', icon: LayoutGrid, path: '/dp' },
   { id: 'linked-list', label: 'Linked List', icon: Layers, path: '/linked-list' },
