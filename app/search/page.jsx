@@ -36,10 +36,9 @@ export default function SearchPage() {
       if (frame?.mid === i) return 'var(--compare)'
       if (i >= (frame?.left ?? 0) && i <= (frame?.right ?? arr.length - 1)) return 'var(--primary)'
       return 'var(--text-muted)'
-    } else {
-      if (frame?.current === i) return 'var(--compare)'
-      return 'var(--primary)'
     }
+    if (frame?.current === i) return 'var(--compare)'
+    return 'var(--primary)'
   }
 
   useEffect(() => {
@@ -59,58 +58,63 @@ export default function SearchPage() {
       <Sidebar />
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+
           {/* Toolbar */}
-          <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b"
-            style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}>
-            <div className="flex gap-1">
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 4 }}>
               {Object.entries(ALGOS).map(([key, { label }]) => (
-                <button key={key}
-                  onClick={() => { setAlgoKey(key); setInput(DEFAULTS[key]); playback.reset() }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                  style={{ background: algoKey === key ? 'var(--primary)' : 'var(--border)', color: algoKey === key ? 'white' : 'var(--text-secondary)' }}>
-                  {label}
-                </button>
+                <button key={key} onClick={() => { setAlgoKey(key); setInput(DEFAULTS[key]); playback.reset() }} style={{
+                  padding: '5px 12px', borderRadius: 7, border: '1px solid',
+                  borderColor: algoKey === key ? 'var(--primary)' : 'var(--border)',
+                  background: algoKey === key ? 'var(--primary-glow)' : 'transparent',
+                  color: algoKey === key ? 'var(--primary)' : 'var(--text-secondary)',
+                  fontSize: 12, fontWeight: algoKey === key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s'
+                }}>{label}</button>
               ))}
             </div>
-            <div className="flex items-center gap-2 ml-auto">
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
               <input type="text" value={arrText} onChange={e => setArrText(e.target.value)}
-                placeholder="Array: 1,3,5,7,9..."
-                className="px-2 py-1.5 rounded-lg text-xs font-mono w-40"
-                style={{ background: 'var(--bg-canvas)', border: '1px solid var(--border)', color: 'var(--text-primary)', outline: 'none' }} />
+                placeholder="Array: 1,3,5,7..." style={{ padding: '5px 10px', width: 150, fontSize: 12 }} />
               <input type="text" value={targetText} onChange={e => setTargetText(e.target.value)}
-                placeholder="Target: 7"
-                className="px-2 py-1.5 rounded-lg text-xs font-mono w-24"
-                style={{ background: 'var(--bg-canvas)', border: '1px solid var(--border)', color: 'var(--text-primary)', outline: 'none' }} />
+                placeholder="Target" style={{ padding: '5px 10px', width: 80, fontSize: 12 }} />
               <button onClick={() => {
                 const a = arrText.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n))
                 const t = parseInt(targetText)
                 if (a.length && !isNaN(t)) { setInput({ arr: a, target: t }); playback.reset() }
-              }} className="px-3 py-1.5 rounded-lg text-xs"
-                style={{ background: 'var(--border)', color: 'var(--text-secondary)' }}>
+              }} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-elevated)', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer' }}>
                 Apply
               </button>
             </div>
           </div>
 
           {/* Canvas */}
-          <div className="flex-1 flex flex-col items-center justify-center gap-8 p-8"
-            style={{ background: 'var(--bg-canvas)' }}>
-            <div className="text-center">
-              <div className="text-xs mb-1" style={{ color: 'var(--text-muted)' }}>Target</div>
-              <div className="text-3xl font-mono font-bold" style={{ color: 'var(--current)' }}>{target}</div>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 64, padding: 64, background: 'var(--bg-canvas)' }}>
+
+            {/* Target badge */}
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10, letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 600 }}>Target</div>
+              <div style={{
+                width: 96, height: 96, borderRadius: 20, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                background: 'rgba(6,182,212,0.12)', border: '3px solid var(--current)',
+                fontSize: 40, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: 'var(--current)',
+                boxShadow: '0 0 32px rgba(6,182,212,0.3)'
+              }}>
+                {target}
+              </div>
             </div>
 
+            {/* Pointer labels - binary search */}
             {algoKey === 'binarySearch' && frame && (
-              <div className="flex gap-1.5">
+              <div style={{ display: 'flex', gap: arr.length > 15 ? 4 : 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: '1200px' }}>
                 {arr.map((_, i) => (
-                  <div key={i} className="flex flex-col items-center" style={{ width: 46 }}>
-                    <div className="text-xs font-mono h-5 flex items-center" style={{ color: 'var(--pointer-a)' }}>
+                  <div key={i} style={{ width: arr.length > 15 ? 56 : 72, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                    <div style={{ height: 20, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--pointer-a)', fontWeight: 700 }}>
                       {frame.left === i ? 'L' : ''}
                     </div>
-                    <div className="text-xs font-mono h-5 flex items-center" style={{ color: 'var(--current)' }}>
+                    <div style={{ height: 20, fontSize: 13, fontFamily: 'JetBrains Mono, monospace', color: 'var(--current)', fontWeight: 700 }}>
                       {frame.mid === i ? 'M' : ''}
                     </div>
-                    <div className="text-xs font-mono h-5 flex items-center" style={{ color: 'var(--pointer-b)' }}>
+                    <div style={{ height: 20, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--pointer-b)', fontWeight: 700 }}>
                       {frame.right === i ? 'R' : ''}
                     </div>
                   </div>
@@ -118,34 +122,43 @@ export default function SearchPage() {
               </div>
             )}
 
-            <div className="flex gap-1.5 flex-wrap justify-center">
-              {arr.map((val, i) => (
-                <div key={i} className="flex flex-col items-center gap-1">
-                  <div className="w-12 h-12 rounded-lg flex items-center justify-center text-sm font-mono font-bold transition-all duration-200"
-                    style={{
-                      background: `${getColor(i)}22`,
-                      border: `2px solid ${getColor(i)}`,
-                      color: getColor(i),
-                      boxShadow: (frame?.mid === i || frame?.current === i || frame?.found === i) ? `0 0 12px ${getColor(i)}55` : 'none',
-                      transform: (frame?.mid === i || frame?.current === i) ? 'scale(1.1)' : 'scale(1)',
+            {/* Array elements */}
+            <div style={{ display: 'flex', gap: arr.length > 15 ? 4 : 8, flexWrap: 'wrap', justifyContent: 'center', maxWidth: '1200px' }}>
+              {arr.map((val, i) => {
+                const color = getColor(i)
+                const isActive = frame?.mid === i || frame?.current === i
+                const isFound = frame?.found === i
+                const cellSize = arr.length > 15 ? 56 : 72
+                return (
+                  <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+                    <div style={{
+                      width: cellSize, height: cellSize, borderRadius: 14,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: arr.length > 15 ? 18 : 22, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
+                      background: `${color}18`,
+                      border: `3px solid ${color}`,
+                      color,
+                      transform: isActive ? 'scale(1.2)' : 'scale(1)',
+                      boxShadow: isFound ? `0 0 28px ${color}66` : isActive ? `0 0 20px ${color}55` : 'none',
+                      transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
                     }}>
-                    {val}
+                      {val}
+                    </div>
+                    <span style={{ fontSize: 11, fontFamily: 'JetBrains Mono, monospace', color: 'var(--text-muted)', fontWeight: 500 }}>{i}</span>
                   </div>
-                  <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>{i}</span>
-                </div>
-              ))}
+                )
+              })}
             </div>
 
+            {/* Result */}
             {frame?.found >= 0 && (
-              <div className="px-4 py-2 rounded-lg text-sm font-medium"
-                style={{ background: 'rgba(16,185,129,0.1)', color: 'var(--sorted)', border: '1px solid var(--sorted)' }}>
-                ✓ Found at index {frame.found}
+              <div style={{ padding: '14px 28px', borderRadius: 12, fontSize: 15, fontWeight: 600, background: 'rgba(16,185,129,0.12)', color: 'var(--sorted)', border: '2px solid rgba(16,185,129,0.4)' }}>
+                ✓ Found {target} at index {frame.found}
               </div>
             )}
             {frame?.found === -2 && (
-              <div className="px-4 py-2 rounded-lg text-sm font-medium"
-                style={{ background: 'rgba(239,68,68,0.1)', color: 'var(--swap)', border: '1px solid var(--swap)' }}>
-                ✗ Not found
+              <div style={{ padding: '14px 28px', borderRadius: 12, fontSize: 15, fontWeight: 600, background: 'rgba(239,68,68,0.12)', color: 'var(--swap)', border: '2px solid rgba(239,68,68,0.4)' }}>
+                ✗ {target} not found in array
               </div>
             )}
           </div>
@@ -153,8 +166,7 @@ export default function SearchPage() {
           <PlaybackControls playback={playback} />
         </div>
 
-        <div className="border-l flex-shrink-0 flex flex-col overflow-hidden"
-          style={{ width: 320, borderColor: 'var(--border)' }}>
+        <div style={{ width: 300, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
           <InfoPanel algoKey={algoKey} currentFrame={frame} />
         </div>
       </div>

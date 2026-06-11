@@ -45,15 +45,18 @@ export default function SortingPage() {
     return 'var(--primary)'
   }
 
+  function getBarGlow(i) {
+    if (swapping.has(i)) return `0 0 16px rgba(239,68,68,0.5)`
+    if (comparing.has(i)) return `0 0 16px rgba(245,158,11,0.5)`
+    if (i === pivot) return `0 0 16px rgba(139,92,246,0.5)`
+    if (sorted.has(i)) return `0 0 8px rgba(16,185,129,0.3)`
+    return 'none'
+  }
+
   function handleShuffle() {
     setInputArr(randomArray(size))
     setInputText('')
     playback.reset()
-  }
-
-  function handleCustomInput() {
-    const nums = inputText.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n))
-    if (nums.length > 1) { setInputArr(nums); playback.reset() }
   }
 
   function handleAlgoChange(key) {
@@ -77,69 +80,111 @@ export default function SortingPage() {
     <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'var(--bg-canvas)' }}>
       <Sidebar />
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        {/* Main canvas */}
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+
           {/* Toolbar */}
-          <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b"
-            style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}>
-            <div className="flex gap-1 flex-wrap">
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
               {Object.entries(ALGOS).map(([key, { label }]) => (
-                <button key={key} onClick={() => handleAlgoChange(key)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                  style={{ background: algoKey === key ? 'var(--primary)' : 'var(--border)', color: algoKey === key ? 'white' : 'var(--text-secondary)' }}>
+                <button key={key} onClick={() => handleAlgoChange(key)} style={{
+                  padding: '5px 12px', borderRadius: 7, border: '1px solid',
+                  borderColor: algoKey === key ? 'var(--primary)' : 'var(--border)',
+                  background: algoKey === key ? 'var(--primary-glow)' : 'transparent',
+                  color: algoKey === key ? 'var(--primary)' : 'var(--text-secondary)',
+                  fontSize: 12, fontWeight: algoKey === key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s'
+                }}>
                   {label}
                 </button>
               ))}
             </div>
-            <div className="flex items-center gap-2 ml-auto">
-              <span className="text-xs" style={{ color: 'var(--text-muted)' }}>n={size}</span>
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>n={size}</span>
               <input type="range" min={5} max={50} value={size}
                 onChange={(e) => { setSize(+e.target.value); setInputArr(randomArray(+e.target.value)) }}
-                className="w-24" />
-              <button onClick={handleShuffle}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:opacity-80"
-                style={{ background: 'var(--border)', color: 'var(--text-secondary)' }}>
+                style={{ width: 80 }} />
+              <button onClick={handleShuffle} style={{
+                display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px',
+                borderRadius: 7, border: '1px solid var(--border)', background: 'var(--bg-elevated)',
+                color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer'
+              }}>
                 <Shuffle size={13} /> Shuffle
               </button>
-            </div>
-            <div className="flex items-center gap-2">
               <input type="text" value={inputText} onChange={e => setInputText(e.target.value)}
-                placeholder="5,3,8,1,9,2..."
-                className="px-2 py-1.5 rounded-lg text-xs font-mono w-36"
-                style={{ background: 'var(--bg-canvas)', border: '1px solid var(--border)', color: 'var(--text-primary)', outline: 'none' }} />
-              <button onClick={handleCustomInput}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium"
-                style={{ background: 'var(--border)', color: 'var(--text-secondary)' }}>
-                Apply
-              </button>
+                placeholder="5,3,8,1,9..." style={{ padding: '5px 10px', width: 130, fontSize: 12 }} />
+              <button onClick={() => {
+                const nums = inputText.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n))
+                if (nums.length > 1) { setInputArr(nums); playback.reset() }
+              }} style={{
+                padding: '5px 12px', borderRadius: 7, border: '1px solid var(--border)',
+                background: 'var(--bg-elevated)', color: 'var(--text-secondary)', fontSize: 12, cursor: 'pointer'
+              }}>Apply</button>
             </div>
           </div>
 
           {/* Bar chart */}
-          <div className="flex-1 relative flex items-end justify-center gap-0.5 px-6 pb-8 pt-6"
-            style={{ background: 'var(--bg-canvas)' }}>
-            {arr.map((val, i) => (
-              <div key={i} className="flex flex-col items-center" style={{ flex: 1, maxWidth: 48, minWidth: 4 }}>
-                {arr.length <= 30 && (
-                  <span className="text-xs font-mono mb-1 transition-all duration-200"
-                    style={{ color: getBarColor(i), fontSize: arr.length > 20 ? 9 : 11 }}>
-                    {val}
-                  </span>
-                )}
-                <div className="w-full rounded-t transition-all duration-150"
-                  style={{
-                    height: `${(val / maxVal) * 85}%`,
-                    background: getBarColor(i),
-                    minHeight: 4,
-                    boxShadow: comparing.has(i) || swapping.has(i) ? `0 0 8px ${getBarColor(i)}66` : 'none',
-                  }} />
-              </div>
-            ))}
+          <div style={{
+            flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '48px', background: 'var(--bg-canvas)', position: 'relative'
+          }}>
+            <div style={{
+              display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+              gap: arr.length > 30 ? 2 : arr.length > 20 ? 4 : 6, 
+              height: '80%', maxWidth: '1400px', width: '100%'
+            }}>
+              {/* Grid lines */}
+              {[25, 50, 75, 100].map(pct => (
+                <div key={pct} style={{
+                  position: 'absolute', left: 0, right: 0,
+                  bottom: `${pct * 0.8}%`,
+                  height: 1, background: 'var(--border)', opacity: 0.3, pointerEvents: 'none'
+                }} />
+              ))}
+
+              {arr.map((val, i) => {
+                const color = getBarColor(i)
+                const isActive = comparing.has(i) || swapping.has(i) || i === pivot
+                const barWidth = Math.max(6, Math.min(64, 1200 / arr.length))
+                return (
+                  <div key={i} style={{ 
+                    flex: 1, 
+                    maxWidth: barWidth, 
+                    minWidth: 6, 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    alignItems: 'center', 
+                    position: 'relative',
+                    height: '100%'
+                  }}>
+                    {arr.length <= 25 && (
+                      <div style={{
+                        fontSize: arr.length > 18 ? 11 : 14, 
+                        fontFamily: 'JetBrains Mono, monospace',
+                        color, 
+                        marginBottom: 8, 
+                        fontWeight: 700, 
+                        transition: 'color 0.2s'
+                      }}>
+                        {val}
+                      </div>
+                    )}
+                    <div style={{
+                      width: '100%', 
+                      borderRadius: '6px 6px 2px 2px',
+                      height: `${(val / maxVal) * 85}%`, 
+                      minHeight: 8,
+                      background: `linear-gradient(180deg, ${color} 0%, ${color}BB 100%)`,
+                      boxShadow: getBarGlow(i),
+                      transition: 'height 0.15s, background 0.2s, box-shadow 0.2s',
+                      transform: isActive ? 'scale(1.08)' : 'scale(1)',
+                    }} />
+                  </div>
+                )
+              })}
+            </div>
           </div>
 
           {/* Legend */}
-          <div className="flex gap-4 px-6 py-2 border-t"
-            style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}>
+          <div style={{ display: 'flex', gap: 16, padding: '8px 20px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
             {[
               { color: 'var(--primary)', label: 'Unsorted' },
               { color: 'var(--compare)', label: 'Comparing' },
@@ -147,9 +192,9 @@ export default function SortingPage() {
               { color: 'var(--sorted)', label: 'Sorted' },
               { color: 'var(--pointer-b)', label: 'Pivot' },
             ].map(({ color, label }) => (
-              <div key={label} className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-sm" style={{ background: color }} />
-                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</span>
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 10, height: 10, borderRadius: 3, background: color }} />
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{label}</span>
               </div>
             ))}
           </div>
@@ -157,9 +202,7 @@ export default function SortingPage() {
           <PlaybackControls playback={playback} />
         </div>
 
-        {/* Info panel */}
-        <div className="border-l flex-shrink-0 flex flex-col overflow-hidden"
-          style={{ width: 320, borderColor: 'var(--border)' }}>
+        <div style={{ width: 300, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
           <InfoPanel algoKey={algoKey} currentFrame={frame} />
         </div>
       </div>

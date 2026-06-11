@@ -7,8 +7,8 @@ import InfoPanel from '../../components/InfoPanel'
 import Sidebar from '../../components/Sidebar'
 
 const ALGOS = {
-  bfs: { label: 'BFS', fn: bfsTraversal },
-  dfs: { label: 'DFS', fn: dfsTraversal },
+  bfs: { label: 'BFS — Breadth First', fn: bfsTraversal },
+  dfs: { label: 'DFS — Depth First', fn: dfsTraversal },
 }
 
 const DEFAULT_GRAPH = {
@@ -18,12 +18,12 @@ const DEFAULT_GRAPH = {
 }
 
 const NODE_POSITIONS = {
-  A: { x: 300, y: 60 },
-  B: { x: 160, y: 170 },
-  C: { x: 440, y: 170 },
-  D: { x: 80, y: 290 },
-  E: { x: 240, y: 290 },
-  F: { x: 360, y: 290 },
+  A: { x: 400, y: 80 },
+  B: { x: 200, y: 230 },
+  C: { x: 600, y: 230 },
+  D: { x: 100, y: 400 },
+  E: { x: 300, y: 400 },
+  F: { x: 500, y: 400 },
 }
 
 export default function GraphPage() {
@@ -44,9 +44,8 @@ export default function GraphPage() {
     return 'var(--primary)'
   }
 
-  function getEdgeColor(u, v) {
-    if (visited.has(u) && visited.has(v)) return 'var(--visited)'
-    return 'var(--border)'
+  function getEdgeVisited(u, v) {
+    return visited.has(u) && visited.has(v)
   }
 
   useEffect(() => {
@@ -68,45 +67,81 @@ export default function GraphPage() {
       <Sidebar />
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+
           {/* Toolbar */}
-          <div className="flex items-center gap-3 px-5 py-3 border-b"
-            style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}>
-            <div className="flex gap-1">
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 4 }}>
               {Object.entries(ALGOS).map(([key, { label }]) => (
-                <button key={key} onClick={() => { setAlgoKey(key); playback.reset() }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
-                  style={{ background: algoKey === key ? 'var(--primary)' : 'var(--border)', color: algoKey === key ? 'white' : 'var(--text-secondary)' }}>
-                  {label}
-                </button>
+                <button key={key} onClick={() => { setAlgoKey(key); playback.reset() }} style={{
+                  padding: '5px 12px', borderRadius: 7, border: '1px solid',
+                  borderColor: algoKey === key ? 'var(--primary)' : 'var(--border)',
+                  background: algoKey === key ? 'var(--primary-glow)' : 'transparent',
+                  color: algoKey === key ? 'var(--primary)' : 'var(--text-secondary)',
+                  fontSize: 12, fontWeight: algoKey === key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s'
+                }}>{label}</button>
               ))}
             </div>
-            <span className="text-xs ml-2" style={{ color: 'var(--text-muted)' }}>Start node: A</span>
+            <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+                Start node: <span style={{ color: 'var(--primary)', fontFamily: 'JetBrains Mono, monospace', fontWeight: 600 }}>A</span>
+              </div>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
             {/* Graph SVG */}
-            <div style={{ flex: 1, position: 'relative' }}>
-              <svg width="100%" height="100%" viewBox="0 0 600 380">
-                {DEFAULT_GRAPH.edges.map(([u, v], i) => {
+            <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="100%" height="100%" viewBox="0 0 800 520" style={{ display: 'block', maxWidth: '1400px', maxHeight: '700px' }}>
+                <defs>
+                  <filter id="node-glow">
+                    <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                    <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                  </filter>
+                </defs>
+
+                {/* Edges */}
+                {DEFAULT_GRAPH.edges.map(([u, v]) => {
                   const pu = NODE_POSITIONS[u], pv = NODE_POSITIONS[v]
+                  const isVisited = getEdgeVisited(u, v)
                   return (
-                    <line key={i} x1={pu.x} y1={pu.y} x2={pv.x} y2={pv.y}
-                      stroke={getEdgeColor(u, v)}
-                      strokeWidth={visited.has(u) && visited.has(v) ? 2 : 1.5}
-                      style={{ transition: 'stroke 0.3s' }} />
+                    <line key={`${u}-${v}`}
+                      x1={pu.x} y1={pu.y} x2={pv.x} y2={pv.y}
+                      stroke={isVisited ? 'var(--visited)' : 'var(--border)'}
+                      strokeWidth={isVisited ? 4 : 2.5}
+                      opacity={isVisited ? 1 : 0.5}
+                      style={{ transition: 'all 0.4s' }}
+                    />
                   )
                 })}
+
+                {/* Nodes */}
                 {DEFAULT_GRAPH.nodes.map(node => {
                   const pos = NODE_POSITIONS[node]
                   const color = getNodeColor(node)
                   const isActive = node === current
+                  const isVisited = visited.has(node)
+
                   return (
                     <g key={node}>
-                      <circle cx={pos.x} cy={pos.y} r={isActive ? 28 : 24}
-                        fill={`${color}22`} stroke={color} strokeWidth={isActive ? 2.5 : 1.5}
-                        style={{ transition: 'all 0.3s', filter: isActive ? `drop-shadow(0 0 10px ${color}88)` : 'none' }} />
-                      <text x={pos.x} y={pos.y + 6} textAnchor="middle"
-                        fill={color} fontSize={isActive ? 18 : 16} fontWeight="bold" fontFamily="monospace"
+                      {/* Glow ring for active */}
+                      {isActive && (
+                        <circle cx={pos.x} cy={pos.y} r={56}
+                          fill="none" stroke={color} strokeWidth={2} opacity={0.25}
+                          filter="url(#node-glow)" />
+                      )}
+
+                      {/* Node circle */}
+                      <circle cx={pos.x} cy={pos.y} r={isActive ? 42 : 36}
+                        fill={`${color}20`}
+                        stroke={color}
+                        strokeWidth={isActive ? 4 : isVisited ? 3 : 2}
+                        style={{ transition: 'all 0.3s', filter: isActive ? 'url(#node-glow)' : 'none' }}
+                      />
+
+                      {/* Node label */}
+                      <text x={pos.x} y={pos.y + 10} textAnchor="middle"
+                        fill={color} fontSize={isActive ? 28 : 24} fontWeight="700"
+                        fontFamily="JetBrains Mono, monospace"
                         style={{ transition: 'all 0.3s' }}>
                         {node}
                       </text>
@@ -116,56 +151,69 @@ export default function GraphPage() {
               </svg>
             </div>
 
-            {/* Queue / Stack panel */}
-            <div className="p-4 border-l flex flex-col gap-4"
-              style={{ width: 160, borderColor: 'var(--border)' }}>
+            {/* Queue / Stack + Visited panel */}
+            <div style={{ width: 180, borderLeft: '1px solid var(--border)', padding: 16, display: 'flex', flexDirection: 'column', gap: 20, overflowY: 'auto' }}>
               <div>
-                <div className="text-xs font-semibold uppercase tracking-widest mb-2"
-                  style={{ color: 'var(--text-muted)' }}>
-                  {algoKey === 'bfs' ? 'Queue' : 'Stack'}
+                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10 }}>
+                  {algoKey === 'bfs' ? 'Queue (FIFO)' : 'Stack (LIFO)'}
                 </div>
-                <div className="flex flex-col gap-1">
-                  {dataStructure.length === 0
-                    ? <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Empty</div>
-                    : dataStructure.map((n, i) => (
-                      <div key={i} className="px-3 py-1.5 rounded-lg text-sm font-mono font-bold text-center"
-                        style={{
-                          background: i === 0 ? 'rgba(6,182,212,0.2)' : 'var(--bg-surface)',
-                          border: `1px solid ${i === 0 ? 'var(--current)' : 'var(--border)'}`,
-                          color: i === 0 ? 'var(--current)' : 'var(--text-secondary)',
-                        }}>
+                {dataStructure.length === 0 ? (
+                  <div style={{ fontSize: 12, color: 'var(--text-muted)', fontStyle: 'italic' }}>Empty</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {dataStructure.map((n, i) => (
+                      <div key={i} style={{
+                        padding: '7px 12px', borderRadius: 8, textAlign: 'center',
+                        fontSize: 14, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
+                        background: i === 0 ? 'rgba(6,182,212,0.15)' : 'var(--bg-elevated)',
+                        border: `1px solid ${i === 0 ? 'var(--current)' : 'var(--border)'}`,
+                        color: i === 0 ? 'var(--current)' : 'var(--text-secondary)',
+                        transition: 'all 0.2s'
+                      }}>
                         {n}
+                        {i === 0 && <span style={{ fontSize: 9, marginLeft: 6, opacity: 0.7 }}>next</span>}
                       </div>
-                    ))
-                  }
-                </div>
+                    ))}
+                  </div>
+                )}
               </div>
+
               <div>
-                <div className="text-xs font-semibold uppercase tracking-widest mb-2"
-                  style={{ color: 'var(--text-muted)' }}>Visited</div>
-                <div className="flex flex-wrap gap-1">
-                  {[...visited].map(n => (
-                    <div key={n} className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold font-mono"
-                      style={{ background: 'rgba(167,139,250,0.2)', border: '1px solid var(--visited)', color: 'var(--visited)' }}>
+                <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.08em', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 10 }}>
+                  Visited ({visited.size})
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {[...visited].map((n, i) => (
+                    <div key={n} style={{
+                      width: 36, height: 36, borderRadius: '50%',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 13, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700,
+                      background: 'rgba(167,139,250,0.15)', border: '1.5px solid var(--visited)', color: 'var(--visited)',
+                      animation: 'fadeUp 0.3s ease forwards'
+                    }}>
                       {n}
                     </div>
                   ))}
                 </div>
+                {visited.size > 0 && (
+                  <div style={{ marginTop: 8, fontSize: 11, color: 'var(--text-muted)', fontFamily: 'JetBrains Mono, monospace' }}>
+                    {[...visited].join(' → ')}
+                  </div>
+                )}
               </div>
             </div>
           </div>
 
           {/* Legend */}
-          <div className="flex gap-4 px-6 py-2 border-t"
-            style={{ borderColor: 'var(--border)', background: 'var(--bg-surface)' }}>
+          <div style={{ display: 'flex', gap: 16, padding: '8px 20px', borderTop: '1px solid var(--border)', background: 'var(--bg-surface)' }}>
             {[
               { color: 'var(--primary)', label: 'Unvisited' },
               { color: 'var(--current)', label: 'Processing' },
               { color: 'var(--visited)', label: 'Visited' },
             ].map(({ color, label }) => (
-              <div key={label} className="flex items-center gap-1.5">
-                <div className="w-3 h-3 rounded-full" style={{ background: color }} />
-                <span className="text-xs" style={{ color: 'var(--text-muted)' }}>{label}</span>
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div style={{ width: 10, height: 10, borderRadius: '50%', background: color }} />
+                <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{label}</span>
               </div>
             ))}
           </div>
@@ -173,8 +221,7 @@ export default function GraphPage() {
           <PlaybackControls playback={playback} />
         </div>
 
-        <div className="border-l flex-shrink-0 flex flex-col overflow-hidden"
-          style={{ width: 320, borderColor: 'var(--border)' }}>
+        <div style={{ width: 300, borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0 }}>
           <InfoPanel algoKey={algoKey} currentFrame={frame} />
         </div>
       </div>
