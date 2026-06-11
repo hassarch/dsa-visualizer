@@ -22,20 +22,32 @@ function randomArray(n = 20) {
 
 export default function SortingPage() {
   const [algoKey, setAlgoKey] = useState('bubble')
-  const [inputArr, setInputArr] = useState(() => randomArray())
+  const [inputArr, setInputArr] = useState([])
   const [inputText, setInputText] = useState('')
   const [size, setSize] = useState(20)
+  const [isClient, setIsClient] = useState(false)
+  
+  // Generate random array only on client side to avoid hydration mismatch
+  useEffect(() => {
+    setIsClient(true)
+    setInputArr(randomArray(20))
+  }, [])
 
   const genFn = useCallback((arr) => ALGOS[algoKey].fn(arr), [algoKey])
-  const playback = usePlayback(genFn, inputArr)
+  const playback = usePlayback(genFn, inputArr.length > 0 ? inputArr : [10])
   const frame = playback.currentFrame
 
-  const arr = frame?.array ?? inputArr
+  const arr = frame?.array ?? (inputArr.length > 0 ? inputArr : [10])
   const comparing = new Set(frame?.comparing ?? [])
   const swapping = new Set(frame?.swapping ?? [])
   const sorted = new Set(frame?.sorted ?? [])
   const pivot = frame?.pivot
   const maxVal = Math.max(...arr, 1)
+  
+  // Don't render until client-side hydration is complete
+  if (!isClient) {
+    return null
+  }
 
   function getBarColor(i) {
     if (sorted.has(i)) return 'var(--sorted)'
