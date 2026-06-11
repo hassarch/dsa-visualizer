@@ -1,5 +1,5 @@
 'use client'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { usePlayback } from '../../hooks/usePlayback'
 import { linkedListAppend, linkedListReverse, linkedListDeleteNode } from '../../engines/linkedListEngines'
 import PlaybackControls from '../../components/PlaybackControls'
@@ -18,14 +18,14 @@ export default function LinkedListPage() {
   const [algoKey, setAlgoKey] = useState('linkedListReverse')
   const [opArg, setOpArg] = useState(4)
 
-  const getInput = useCallback(() => {
+  const input = useMemo(() => {
     if (algoKey === 'linkedListReverse') return { values: DEFAULT_VALUES }
     if (algoKey === 'linkedListAppend') return { values: DEFAULT_VALUES, newVal: opArg }
     return { values: DEFAULT_VALUES, target: opArg }
   }, [algoKey, opArg])
 
   const genFn = useCallback((input) => ALGOS[algoKey].fn(input), [algoKey])
-  const playback = usePlayback(genFn, getInput())
+  const playback = usePlayback(genFn, input)
   const frame = playback.currentFrame
 
   const nodes = frame?.nodes ?? DEFAULT_VALUES.map((v, i) => ({ id: i, val: v }))

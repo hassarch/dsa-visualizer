@@ -34,14 +34,23 @@ export function* linkedListAppend({ values, newVal }) {
 
 export function* linkedListReverse({ values }) {
   let head = makeList(values)
-  yield { nodes: listToArray(head), highlight: [], pointers: {}, label: 'Reversing linked list' }
+  
+  // Store all node references before mutation to avoid traversal issues
+  const allNodes = []
+  let temp = head
+  while (temp) {
+    allNodes.push(temp)
+    temp = temp.next
+  }
+  
+  yield { nodes: allNodes.map(n => ({ id: n.id, val: n.val })), highlight: [], pointers: {}, label: 'Reversing linked list' }
 
   let prev = null, curr = head
 
   while (curr) {
     const next = curr.next
     yield {
-      nodes: listToArray(head),
+      nodes: allNodes.map(n => ({ id: n.id, val: n.val })),
       highlight: [curr.id],
       pointers: { prev: prev?.id, curr: curr.id, next: next?.id },
       label: `curr=${curr.val}, saving next pointer`
@@ -50,7 +59,7 @@ export function* linkedListReverse({ values }) {
     prev = curr
     curr = next
     yield {
-      nodes: listToArray(head),
+      nodes: allNodes.map(n => ({ id: n.id, val: n.val })),
       highlight: [prev.id],
       pointers: { prev: prev?.id, curr: curr?.id },
       label: `Reversed pointer at ${prev.val}`
