@@ -1,14 +1,15 @@
 'use client'
 import { usePathname, useRouter } from 'next/navigation'
-import { ArrowDownNarrowWide, Search, GitBranch, LayoutGrid, Layers, Menu, Columns4 } from 'lucide-react'
+import { ArrowDownNarrowWide, Search, GitBranch, LayoutGrid, Layers, Menu, Columns4, Archive } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 
 const NAV = [
   { id: 'sorting', label: 'Sorting', icon: ArrowDownNarrowWide, path: '/sorting' },
   { id: 'arrays', label: 'Arrays', icon: Columns4, path: '/arrays' },
+  { id: 'linked-list', label: 'Linked List', icon: Layers, path: '/linked-list' },
+  { id: 'stack-queue', label: 'Stack & Queue', icon: Archive, path: '/stack-queue' },
   { id: 'graph', label: 'Graph Algorithms', icon: GitBranch, path: '/graph' },
   { id: 'dp', label: 'Dynamic Programming', icon: LayoutGrid, path: '/dp' },
-  { id: 'linked-list', label: 'Linked List', icon: Layers, path: '/linked-list' },
 ]
 
 export default function Sidebar() {
