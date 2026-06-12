@@ -222,23 +222,32 @@ export function* palindromeCheck({ values }) {
   const flatNodes = listToArray(head)
   const vals = values
   
-  yield { nodes: flatNodes, left: 0, right: vals.length - 1, isPalindrome: null, label: `Check if linked list is a palindrome` }
+  yield { nodes: flatNodes, left: 0, right: vals.length - 1, isPalindrome: null, matched: [], label: `Check if linked list is a palindrome` }
   
   let left = 0, right = vals.length - 1
   let result = true
+  const matched = []
   
   while (left < right) {
-    yield { nodes: flatNodes, left, right, isPalindrome: null, label: `Comparing vals[${left}]=${vals[left]} and vals[${right}]=${vals[right]}` }
+    yield { nodes: flatNodes, left, right, isPalindrome: null, matched: [...matched], label: `Comparing vals[${left}]=${vals[left]} and vals[${right}]=${vals[right]}` }
+    
     if (vals[left] !== vals[right]) {
       result = false
-      yield { nodes: flatNodes, left, right, isPalindrome: false, label: `✗ ${vals[left]} ≠ ${vals[right]}, not a palindrome` }
+      yield { nodes: flatNodes, left, right, isPalindrome: false, matched: [...matched], label: `✗ ${vals[left]} ≠ ${vals[right]}, not a palindrome` }
       return
     }
-    yield { nodes: flatNodes, left, right, isPalindrome: null, label: `${vals[left]} === ${vals[right]} ✓, move pointers inward` }
-    left++; right--
+    
+    // Values match! Mark them as matched (green)
+    matched.push(left, right)
+    yield { nodes: flatNodes, left, right, isPalindrome: null, matched: [...matched], label: `✓ ${vals[left]} === ${vals[right]}, values match! Turning green...` }
+    
+    // Move pointers inward
+    left++
+    right--
+    yield { nodes: flatNodes, left, right, isPalindrome: null, matched: [...matched], label: `Moving pointers inward: left→${left}, right→${right}` }
   }
   
-  yield { nodes: flatNodes, left, right, isPalindrome: true, label: `✓ All pairs matched — list IS a palindrome!` }
+  yield { nodes: flatNodes, left, right, isPalindrome: true, matched: [...matched], label: `✓ All pairs matched — list IS a palindrome!` }
 }
 
 export function* intersectionOfLists({ values1, values2, intersectAt }) {

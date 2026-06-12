@@ -727,8 +727,11 @@ function StandardViz({ frame, input, algo, algoKey }) {
   const left = frame?.left ?? -1
   const right = frame?.right ?? -1
   const isPalindrome = frame?.isPalindrome
+  const matched = new Set(frame?.matched ?? [])
   
-  function getNodeColor(node) {
+  function getNodeColor(node, idx) {
+    // For palindrome: matched nodes turn green
+    if (matched.has(idx)) return 'var(--sorted)'
     if (node.id === removeId) return 'var(--swap)'
     if (node.id === middleId) return 'var(--sorted)'
     if (node.id === fastId && node.id === slowId) return 'var(--compare)'
@@ -829,8 +832,8 @@ function StandardViz({ frame, input, algo, algoKey }) {
         {nodes.map((node, i) => {
           const x = startX + i * (NODE_W + GAP)
           const y = 88
-          const color = getNodeColor(node)
-          const isActive = highlight.has(node.id) || Object.values(pointers).includes(node.id) || node.id === slowId || node.id === fastId || node.id === middleId || node.id === removeId
+          const color = getNodeColor(node, i)
+          const isActive = highlight.has(node.id) || Object.values(pointers).includes(node.id) || node.id === slowId || node.id === fastId || node.id === middleId || node.id === removeId || matched.has(i)
           
           return (
             <g key={node.id}>
