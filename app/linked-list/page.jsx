@@ -482,6 +482,9 @@ function InputPanel({ algoKey, input, onInputChange, onClose }) {
             <marker id="builder-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
               <path d="M1 1L9 5L1 9" fill="none" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </marker>
+            <marker id="builder-arrow-active" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M1 1L9 5L1 9" fill="none" stroke="var(--current)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </marker>
           </defs>
           
           {/* Draw connections */}
@@ -489,13 +492,22 @@ function InputPanel({ algoKey, input, onInputChange, onClose }) {
             if (!node.next) return null
             const target = nodes.find(n => n.id === node.next)
             if (!target) return null
+            
+            // Calculate arrow from right edge of source to left edge of target
+            const NODE_WIDTH = 60
+            const NODE_HEIGHT = 44
+            const x1 = node.x + NODE_WIDTH  // Right edge of source node
+            const y1 = node.y + NODE_HEIGHT / 2  // Middle height of source node
+            const x2 = target.x - 5  // Left edge of target node (with small gap)
+            const y2 = target.y + NODE_HEIGHT / 2  // Middle height of target node
+            
             return (
               <line
                 key={`${node.id}-${node.next}`}
-                x1={node.x + 30}
-                y1={node.y + 22}
-                x2={target.x}
-                y2={target.y + 22}
+                x1={x1}
+                y1={y1}
+                x2={x2}
+                y2={y2}
                 stroke="var(--primary)"
                 strokeWidth={2}
                 markerEnd="url(#builder-arrow)"
@@ -506,13 +518,14 @@ function InputPanel({ algoKey, input, onInputChange, onClose }) {
           {/* Draw temp connection line */}
           {connectingFrom && selectedNode === connectingFrom && (
             <line
-              x1={nodes.find(n => n.id === connectingFrom).x + 30}
+              x1={nodes.find(n => n.id === connectingFrom).x + 60}
               y1={nodes.find(n => n.id === connectingFrom).y + 22}
-              x2={nodes.find(n => n.id === connectingFrom).x + 80}
+              x2={nodes.find(n => n.id === connectingFrom).x + 110}
               y2={nodes.find(n => n.id === connectingFrom).y + 22}
               stroke="var(--current)"
               strokeWidth={2}
               strokeDasharray="5 5"
+              markerEnd="url(#builder-arrow-active)"
             />
           )}
         </svg>
