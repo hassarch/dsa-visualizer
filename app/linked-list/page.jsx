@@ -8,7 +8,7 @@ import {
 } from '../../engines/linkedListEngines'
 import PlaybackControls from '../../components/PlaybackControls'
 import Sidebar from '../../components/Sidebar'
-import { ExternalLink, Clock, Database, Zap, BookOpen, Code2 } from 'lucide-react'
+import { ExternalLink, Clock, Database, Zap, BookOpen, Code2, Settings, X, Plus, Trash2, Link2 } from 'lucide-react'
 
 const ALGOS = {
   linkedListReverse: {
@@ -131,9 +131,410 @@ const difficultyBg = { Easy: 'rgba(16,185,129,0.08)', Medium: 'rgba(245,158,11,0
 
 const NODE_W = 60, NODE_H = 44, GAP = 48
 
+// ─── Visual Node Builder Component ───────────────────────────────────────────
+
+function InputPanel({ algoKey, input, onInputChange, onClose }) {
+  const [nodes, setNodes] = useState([])
+  const [selectedNode, setSelectedNode] = useState(null)
+  const [connectingFrom, setConnectingFrom] = useState(null)
+  const [nextId, setNextId] = useState(1)
+  
+  // Initialize from input
+  useEffect(() => {
+    if (input.values) {
+      const initialNodes = input.values.map((val, idx) => ({
+        id: idx + 1,
+        value: val,
+        x: 100 + idx * 100,
+        y: 150,
+        next: idx < input.values.length - 1 ? idx + 2 : null
+      }))
+      setNodes(initialNodes)
+      setNextId(input.values.length + 1)
+    } else {
+      setNodes([])
+      setNextId(1)
+    }
+  }, [algoKey])
+  
+  function addNode() {
+    const newNode = {
+      id: nextId,
+      value: 0,
+      x: 100 + nodes.length * 100,
+      y: 150,
+      next: null
+    }
+    setNodes([...nodes, newNode])
+    setNextId(nextId + 1)
+    setSelectedNode(newNode.id)
+  }
+  
+  function deleteNode(id) {
+    setNodes(nodes.filter(n => n.id !== id).map(n => ({
+      ...n,
+      next: n.next === id ? null : n.next
+    })))
+    if (selectedNode === id) setSelectedNode(null)
+    if (connectingFrom === id) setConnectingFrom(null)
+  }
+  
+  function updateNodeValue(id, value) {
+    setNodes(nodes.map(n => n.id === id ? { ...n, value: parseInt(value) || 0 } : n))
+  }
+  
+  function updateNodePosition(id, x, y) {
+    setNodes(nodes.map(n => n.id === id ? { ...n, x, y } : n))
+  }
+  
+  function connectNodes(fromId, toId) {
+    if (fromId === toId) return
+    setNodes(nodes.map(n => n.id === fromId ? { ...n, next: toId } : n))
+    setConnectingFrom(null)
+  }
+  
+  function disconnectNode(id) {
+    setNodes(nodes.map(n => n.id === id ? { ...n, next: null } : n))
+  }
+  
+  function handleApply() {
+    // Find head (node with no incoming connections)
+    const hasIncoming = new Set(nodes.map(n => n.next).filter(Boolean))
+    const head = nodes.find(n => !hasIncoming.has(n.id))
+    
+    if (!head) {
+      alert('Please create a linked list with a clear head node (no incoming connections)')
+      return
+    }
+    
+    // Traverse to build values array
+    const values = []
+    let current = head
+    const visited = new Set()
+    
+    while (current && !visited.has(current.id)) {
+      values.push(current.value)
+      visited.add(current.id)
+      current = nodes.find(n => n.id === current.next)
+    }
+    
+    // Check for cycle
+    let cycleAt = -1
+    if (current && visited.has(current.id)) {
+      const valuesArr = []
+      let temp = head
+      let idx = 0
+      while (temp && idx < values.length) {
+        if (temp.id === current.id) {
+          cycleAt = valuesArr.length
+          break
+        }
+        valuesArr.push(temp.value)
+        temp = nodes.find(n => n.id === temp.next)
+        idx++
+      }
+    }
+    
+    // Build appropriate input based on algorithm
+    let newInput = { ...input, values }
+    if (algoKey === 'detectCycle') {
+      newInput.cycleAt = cycleAt
+    }
+    
+    onInputChange(newInput)
+    onClose()
+  }
+  
+  function handleNodeMouseDown(e, node) {
+    if (e.button !== 0) return
+    const startX = e.clientX
+    const startY = e.clientY
+    const startNodeX = node.x
+    const startNodeY = node.y
+    
+    function handleMouseMove(e) {
+      const dx = e.clientX - startX
+      const dy = e.clientY - startY
+      updateNodePosition(node.id, startNodeX + dx, startNodeY + dy)
+    }
+    
+    function handleMouseUp() {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
+    }
+    
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+  }
+  
+  return (
+    <div style={{ height: 400, background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: 'column' }}>
+      {/* Toolbar */}
+      <div style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Database size={14} color="var(--current)" />
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text-primary)' }}>Visual Node Builder</span>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', marginLeft: 8 }}>
+            Click nodes to select • Drag to move • Connect with arrows
+          </span>
+        </div>
+        <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: 4, display: 'flex', alignItems: 'center', color: 'var(--text-muted)' }}>
+          <X size={16} />
+        </button>
+      </div>
+      
+      {/* Actions */}
+      <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <button onClick={addNode} style={{
+          padding: '6px 12px', borderRadius: 6, border: '1px solid var(--border)',
+          background: 'var(--bg-canvas)', color: 'var(--text-primary)',
+          fontSize: 11, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6
+        }}>
+          <Plus size={14} />
+          Add Node
+        </button>
+        
+        {/* Quick templates */}
+        <div style={{ marginLeft: 8, paddingLeft: 8, borderLeft: '1px solid var(--border)', display: 'flex', gap: 6, alignItems: 'center' }}>
+          <span style={{ fontSize: 10, color: 'var(--text-muted)' }}>Quick:</span>
+          <button onClick={() => {
+            const template = [1, 2, 3, 4, 5].map((val, idx) => ({
+              id: idx + 1,
+              value: val,
+              x: 80 + idx * 100,
+              y: 150,
+              next: idx < 4 ? idx + 2 : null
+            }))
+            setNodes(template)
+            setNextId(6)
+          }} style={{
+            padding: '4px 8px', borderRadius: 4, border: '1px solid var(--border)',
+            background: 'var(--bg-canvas)', color: 'var(--text-secondary)',
+            fontSize: 10, cursor: 'pointer'
+          }}>
+            Linear 1-5
+          </button>
+          <button onClick={() => {
+            const template = [1, 2, 3, 2, 1].map((val, idx) => ({
+              id: idx + 1,
+              value: val,
+              x: 80 + idx * 100,
+              y: 150,
+              next: idx < 4 ? idx + 2 : null
+            }))
+            setNodes(template)
+            setNextId(6)
+          }} style={{
+            padding: '4px 8px', borderRadius: 4, border: '1px solid var(--border)',
+            background: 'var(--bg-canvas)', color: 'var(--text-secondary)',
+            fontSize: 10, cursor: 'pointer'
+          }}>
+            Palindrome
+          </button>
+          <button onClick={() => {
+            const template = [1, 2, 3, 4, 5, 6].map((val, idx) => ({
+              id: idx + 1,
+              value: val,
+              x: 80 + idx * 100,
+              y: 150,
+              next: idx < 5 ? idx + 2 : 3 // Cycle back to node 3
+            }))
+            setNodes(template)
+            setNextId(7)
+          }} style={{
+            padding: '4px 8px', borderRadius: 4, border: '1px solid var(--border)',
+            background: 'var(--bg-canvas)', color: 'var(--text-secondary)',
+            fontSize: 10, cursor: 'pointer'
+          }}>
+            With Cycle
+          </button>
+        </div>
+        
+        {selectedNode && (
+          <>
+            <button onClick={() => deleteNode(selectedNode)} style={{
+              padding: '6px 12px', borderRadius: 6, border: '1px solid var(--border)',
+              background: 'rgba(239,68,68,0.1)', color: 'var(--swap)',
+              fontSize: 11, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6
+            }}>
+              <Trash2 size={14} />
+              Delete
+            </button>
+            
+            <button onClick={() => setConnectingFrom(connectingFrom === selectedNode ? null : selectedNode)} style={{
+              padding: '6px 12px', borderRadius: 6, border: '1px solid var(--border)',
+              background: connectingFrom === selectedNode ? 'rgba(6,182,212,0.1)' : 'var(--bg-canvas)',
+              color: connectingFrom === selectedNode ? 'var(--current)' : 'var(--text-primary)',
+              fontSize: 11, fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6
+            }}>
+              <Link2 size={14} />
+              {connectingFrom === selectedNode ? 'Cancel' : 'Connect →'}
+            </button>
+            
+            {nodes.find(n => n.id === selectedNode)?.next && (
+              <button onClick={() => disconnectNode(selectedNode)} style={{
+                padding: '6px 12px', borderRadius: 6, border: '1px solid var(--border)',
+                background: 'var(--bg-canvas)', color: 'var(--text-secondary)',
+                fontSize: 11, fontWeight: 500, cursor: 'pointer'
+              }}>
+                Disconnect
+              </button>
+            )}
+          </>
+        )}
+        
+        <div style={{ flex: 1 }} />
+        
+        <button onClick={handleApply} style={{
+          padding: '6px 16px', borderRadius: 6, border: 'none',
+          background: 'var(--current)', color: 'white',
+          fontSize: 11, fontWeight: 600, cursor: 'pointer', boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+        }}>
+          Apply & Run Algorithm
+        </button>
+      </div>
+      
+      {/* Canvas */}
+      <div style={{ flex: 1, position: 'relative', overflow: 'auto', background: 'var(--bg-canvas)' }}>
+        <svg width="100%" height="100%" style={{ position: 'absolute', top: 0, left: 0, pointerEvents: 'none' }}>
+          <defs>
+            <marker id="builder-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M1 1L9 5L1 9" fill="none" stroke="var(--primary)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </marker>
+          </defs>
+          
+          {/* Draw connections */}
+          {nodes.map(node => {
+            if (!node.next) return null
+            const target = nodes.find(n => n.id === node.next)
+            if (!target) return null
+            return (
+              <line
+                key={`${node.id}-${node.next}`}
+                x1={node.x + 30}
+                y1={node.y + 22}
+                x2={target.x}
+                y2={target.y + 22}
+                stroke="var(--primary)"
+                strokeWidth={2}
+                markerEnd="url(#builder-arrow)"
+              />
+            )
+          })}
+          
+          {/* Draw temp connection line */}
+          {connectingFrom && selectedNode === connectingFrom && (
+            <line
+              x1={nodes.find(n => n.id === connectingFrom).x + 30}
+              y1={nodes.find(n => n.id === connectingFrom).y + 22}
+              x2={nodes.find(n => n.id === connectingFrom).x + 80}
+              y2={nodes.find(n => n.id === connectingFrom).y + 22}
+              stroke="var(--current)"
+              strokeWidth={2}
+              strokeDasharray="5 5"
+            />
+          )}
+        </svg>
+        
+        {/* Draw nodes */}
+        {nodes.map(node => (
+          <div
+            key={node.id}
+            style={{
+              position: 'absolute',
+              left: node.x,
+              top: node.y,
+              cursor: connectingFrom && connectingFrom !== node.id ? 'crosshair' : 'move',
+              zIndex: selectedNode === node.id ? 10 : 1
+            }}
+            onMouseDown={(e) => {
+              if (connectingFrom && connectingFrom !== node.id) {
+                connectNodes(connectingFrom, node.id)
+                e.stopPropagation()
+              } else {
+                setSelectedNode(node.id)
+                handleNodeMouseDown(e, node)
+              }
+            }}
+          >
+            <div style={{
+              width: 60,
+              height: 44,
+              borderRadius: 8,
+              background: selectedNode === node.id ? 'rgba(6,182,212,0.15)' : 'rgba(139,92,246,0.1)',
+              border: `2px solid ${selectedNode === node.id ? 'var(--current)' : 'var(--primary)'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: selectedNode === node.id ? '0 0 12px rgba(6,182,212,0.3)' : '0 2px 4px rgba(0,0,0,0.1)',
+              transition: 'all 0.2s'
+            }}>
+              <input
+                type="number"
+                value={node.value}
+                onChange={(e) => {
+                  updateNodeValue(node.id, e.target.value)
+                  e.stopPropagation()
+                }}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  setSelectedNode(node.id)
+                }}
+                style={{
+                  width: 40,
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--text-primary)',
+                  fontSize: 16,
+                  fontWeight: 700,
+                  fontFamily: 'JetBrains Mono, monospace',
+                  textAlign: 'center',
+                  outline: 'none',
+                  pointerEvents: 'auto'
+                }}
+              />
+            </div>
+            <div style={{
+              position: 'absolute',
+              top: -20,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              fontSize: 10,
+              color: 'var(--text-muted)',
+              fontFamily: 'JetBrains Mono, monospace',
+              background: 'var(--bg-surface)',
+              padding: '2px 6px',
+              borderRadius: 4,
+              border: '1px solid var(--border)'
+            }}>
+              #{node.id}
+            </div>
+          </div>
+        ))}
+        
+        {nodes.length === 0 && (
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            textAlign: 'center',
+            color: 'var(--text-muted)',
+            fontSize: 13
+          }}>
+            <Database size={32} style={{ opacity: 0.5, marginBottom: 12 }} />
+            <div>Click "Add Node" to start building your linked list</div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export default function LinkedListPage() {
   const [algoKey, setAlgoKey] = useState('linkedListReverse')
   const [input, setInput] = useState(ALGOS.linkedListReverse.defaultInput)
+  const [showInputPanel, setShowInputPanel] = useState(false)
 
   const algo = ALGOS[algoKey]
   
@@ -144,6 +545,11 @@ export default function LinkedListPage() {
   function handleAlgoChange(key) {
     setAlgoKey(key)
     setInput(ALGOS[key].defaultInput)
+    playback.reset()
+  }
+  
+  function handleInputChange(newInput) {
+    setInput(newInput)
     playback.reset()
   }
   
@@ -166,16 +572,28 @@ export default function LinkedListPage() {
         <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
           
           {/* Toolbar */}
-          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
-            {Object.entries(ALGOS).map(([key, { label, color }]) => (
-              <button key={key} onClick={() => handleAlgoChange(key)} style={{
-                padding: '5px 12px', borderRadius: 7, border: '1px solid',
-                borderColor: algoKey === key ? color : 'var(--border)',
-                background: algoKey === key ? `${color}18` : 'transparent',
-                color: algoKey === key ? color : 'var(--text-secondary)',
-                fontSize: 12, fontWeight: algoKey === key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s'
-              }}>{label}</button>
-            ))}
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+              {Object.entries(ALGOS).map(([key, { label, color }]) => (
+                <button key={key} onClick={() => handleAlgoChange(key)} style={{
+                  padding: '5px 12px', borderRadius: 7, border: '1px solid',
+                  borderColor: algoKey === key ? color : 'var(--border)',
+                  background: algoKey === key ? `${color}18` : 'transparent',
+                  color: algoKey === key ? color : 'var(--text-secondary)',
+                  fontSize: 12, fontWeight: algoKey === key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s'
+                }}>{label}</button>
+              ))}
+            </div>
+            <button onClick={() => setShowInputPanel(!showInputPanel)} style={{
+              padding: '6px 12px', borderRadius: 7, border: '1px solid var(--border)',
+              background: showInputPanel ? 'rgba(6,182,212,0.1)' : 'transparent',
+              color: showInputPanel ? 'var(--current)' : 'var(--text-secondary)',
+              fontSize: 12, fontWeight: 500, cursor: 'pointer', transition: 'all 0.15s',
+              display: 'flex', alignItems: 'center', gap: 6
+            }}>
+              <Database size={14} />
+              <span>Build List Visually</span>
+            </button>
           </div>
           
           {/* Description */}
@@ -183,6 +601,9 @@ export default function LinkedListPage() {
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: algo.color, flexShrink: 0 }} />
             <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{algo.description}</span>
           </div>
+          
+          {/* Input Panel */}
+          {showInputPanel && <InputPanel algoKey={algoKey} input={input} onInputChange={handleInputChange} onClose={() => setShowInputPanel(false)} />}
           
           {/* Visualizer */}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
