@@ -1,11 +1,10 @@
 'use client'
 import { usePathname, useRouter } from 'next/navigation'
-import { ArrowDownNarrowWide, Search, GitBranch, LayoutGrid, Layers, Settings, Menu, Columns4 } from 'lucide-react'
+import { ArrowDownNarrowWide, Search, GitBranch, LayoutGrid, Layers, Menu, Columns4 } from 'lucide-react'
 import { useAppStore } from '../store/useAppStore'
 
 const NAV = [
   { id: 'sorting', label: 'Sorting', icon: ArrowDownNarrowWide, path: '/sorting' },
-  { id: 'search', label: 'Searching', icon: Search, path: '/search' },
   { id: 'arrays', label: 'Arrays', icon: Columns4, path: '/arrays' },
   { id: 'graph', label: 'Graph Algorithms', icon: GitBranch, path: '/graph' },
   { id: 'dp', label: 'Dynamic Programming', icon: LayoutGrid, path: '/dp' },
@@ -86,32 +85,6 @@ export default function Sidebar() {
             )
           })}
         </nav>
-      </div>
-
-      {/* Footer */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-        <div style={{ borderTop: '1px solid var(--border)', margin: '12px 4px 16px 4px' }} />
-        
-        <button onClick={() => router.push('/search')} style={{
-          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-          padding: '12px 14px', border: 'none', cursor: 'pointer', borderRadius: 8,
-          background: 'transparent', color: '#a1a1aa', transition: 'all 0.15s', textAlign: 'left',
-          textTransform: 'uppercase', fontSize: 11, fontWeight: 500, letterSpacing: '0.05em'
-        }}>
-          <Search size={16} />
-          <span>Search</span>
-        </button>
-
-        <button style={{
-          width: '100%', display: 'flex', alignItems: 'center', gap: 12,
-          padding: '12px 14px', border: 'none', borderRadius: 8,
-          background: 'transparent', color: '#71717a', textAlign: 'left',
-          textTransform: 'uppercase', fontSize: 11, fontWeight: 500, letterSpacing: '0.05em',
-          cursor: 'default'
-        }}>
-          <Settings size={16} />
-          <span>Settings</span>
-        </button>
       </div>
     </div>
   )
