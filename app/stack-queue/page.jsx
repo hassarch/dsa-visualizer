@@ -219,7 +219,7 @@ export default function StackQueuePage() {
           </div>
           
           {/* Operations toolbar */}
-          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
             {Object.entries(ops).map(([key, { label, color }]) => (
               <button key={key} onClick={() => handleOpChange(key)} style={{
                 padding: '5px 12px', borderRadius: 7, border: '1px solid',
@@ -239,8 +239,8 @@ export default function StackQueuePage() {
           
           {/* Visualizer */}
           <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            {mode === 'stack' && <StackVisualizer frame={frame} input={input} setInput={setInput} opKey={opKey} />}
-            {mode === 'queue' && <QueueVisualizer frame={frame} input={input} setInput={setInput} opKey={opKey} />}
+            {mode === 'stack' && <StackVisualizer frame={frame} input={input} setInput={setInput} opKey={opKey} playback={playback} />}
+            {mode === 'queue' && <QueueVisualizer frame={frame} input={input} setInput={setInput} opKey={opKey} playback={playback} />}
             {mode === 'applications' && <ApplicationVisualizer frame={frame} input={input} setInput={setInput} opKey={opKey} playback={playback} />}
           </div>
           
@@ -258,7 +258,7 @@ export default function StackQueuePage() {
 
 // ─── Stack Visualizer ─────────────────────────────────────────────────────────
 
-function StackVisualizer({ frame, input, setInput, opKey }) {
+function StackVisualizer({ frame, input, setInput, opKey, playback }) {
   const stack = frame?.stack ?? input.stack ?? []
   const highlight = frame?.highlight
   const operation = frame?.operation
@@ -340,7 +340,7 @@ function StackVisualizer({ frame, input, setInput, opKey }) {
 
 // ─── Queue Visualizer ─────────────────────────────────────────────────────────
 
-function QueueVisualizer({ frame, input, setInput, opKey }) {
+function QueueVisualizer({ frame, input, setInput, opKey, playback }) {
   const queue = frame?.queue ?? input.queue ?? []
   const highlight = frame?.highlight
   const operation = frame?.operation
