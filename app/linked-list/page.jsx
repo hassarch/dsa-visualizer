@@ -240,6 +240,10 @@ function InputPanel({ algoKey, input, onInputChange, onClose }) {
     if (algoKey === 'detectCycle') {
       newInput.cycleAt = cycleAt
     }
+    // Keep the custom inputs (newVal, target, n) from state if they exist
+    if (input.newVal !== undefined) newInput.newVal = input.newVal
+    if (input.target !== undefined) newInput.target = input.target
+    if (input.n !== undefined) newInput.n = input.n
     
     onInputChange(newInput)
     onClose()
@@ -393,6 +397,83 @@ function InputPanel({ algoKey, input, onInputChange, onClose }) {
           Apply & Run Algorithm
         </button>
       </div>
+      
+      {/* Algorithm-specific inputs */}
+      {(algoKey === 'linkedListAppend' || algoKey === 'linkedListDeleteNode' || algoKey === 'removeNthFromEnd') && (
+        <div style={{ padding: '10px 20px', borderBottom: '1px solid var(--border)', background: 'rgba(6,182,212,0.05)', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)', fontWeight: 600 }}>Algorithm Parameters:</span>
+          
+          {algoKey === 'linkedListAppend' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <label style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Value to Append:</label>
+              <input
+                type="number"
+                value={input.newVal}
+                onChange={(e) => onInputChange({ ...input, newVal: parseInt(e.target.value) || 0 })}
+                style={{
+                  width: 80,
+                  padding: '4px 8px',
+                  borderRadius: 4,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-canvas)',
+                  color: 'var(--text-primary)',
+                  fontSize: 12,
+                  fontFamily: 'JetBrains Mono, monospace'
+                }}
+              />
+            </div>
+          )}
+          
+          {algoKey === 'linkedListDeleteNode' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <label style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Value to Delete:</label>
+              <input
+                type="number"
+                value={input.target}
+                onChange={(e) => onInputChange({ ...input, target: parseInt(e.target.value) || 0 })}
+                style={{
+                  width: 80,
+                  padding: '4px 8px',
+                  borderRadius: 4,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-canvas)',
+                  color: 'var(--text-primary)',
+                  fontSize: 12,
+                  fontFamily: 'JetBrains Mono, monospace'
+                }}
+              />
+            </div>
+          )}
+          
+          {algoKey === 'removeNthFromEnd' && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <label style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Nth from End:</label>
+              <input
+                type="number"
+                value={input.n}
+                min={1}
+                onChange={(e) => onInputChange({ ...input, n: Math.max(1, parseInt(e.target.value) || 1) })}
+                style={{
+                  width: 80,
+                  padding: '4px 8px',
+                  borderRadius: 4,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg-canvas)',
+                  color: 'var(--text-primary)',
+                  fontSize: 12,
+                  fontFamily: 'JetBrains Mono, monospace'
+                }}
+              />
+            </div>
+          )}
+          
+          <span style={{ fontSize: 10, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+            {algoKey === 'linkedListAppend' && '← This value will be added to the end of your list'}
+            {algoKey === 'linkedListDeleteNode' && '← First node with this value will be removed'}
+            {algoKey === 'removeNthFromEnd' && '← Position from end (1 = last node, 2 = second to last, etc.)'}
+          </span>
+        </div>
+      )}
       
       {/* Canvas */}
       <div style={{ flex: 1, position: 'relative', overflow: 'auto', background: 'var(--bg-canvas)' }}>

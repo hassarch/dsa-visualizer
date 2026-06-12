@@ -166,12 +166,32 @@ export function* mergeSortedLists({ values1, values2 }) {
 export function* removeNthFromEnd({ values, n }) {
   let head = makeList(values)
   const flatNodes = listToArray(head)
+  
+  if (!head) {
+    yield { nodes: [], fastId: null, slowId: null, removeId: null, label: `Empty list - nothing to remove` }
+    return
+  }
+  
+  if (n <= 0) {
+    yield { nodes: flatNodes, fastId: null, slowId: null, removeId: null, label: `Invalid n value: ${n}. Must be positive.` }
+    return
+  }
+  
+  if (n > values.length) {
+    yield { nodes: flatNodes, fastId: null, slowId: null, removeId: null, label: `n=${n} is larger than list length (${values.length})` }
+    return
+  }
+  
   let fast = head, slow = head
   let step = 0
   
   yield { nodes: flatNodes, fastId: fast.id, slowId: slow.id, removeId: null, label: `Remove ${n}th node from end. Move fast ${n} steps ahead` }
   
   for (let i = 0; i < n; i++) {
+    if (!fast) {
+      yield { nodes: flatNodes, fastId: null, slowId: slow.id, removeId: null, label: `Fast is null → n is larger than list length` }
+      return
+    }
     fast = fast.next
     step++
     yield { nodes: flatNodes, fastId: fast?.id, slowId: slow.id, removeId: null, label: `Fast moved to ${fast?.val ?? 'null'} (step ${step})` }
