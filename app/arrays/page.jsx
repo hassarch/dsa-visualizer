@@ -276,24 +276,38 @@ function TwoPointersViz({ frame, input, color }) {
 function SlidingWindowViz({ frame, input, color, fixed }) {
   const arr = frame?.array ?? input.arr
   const wStart = frame?.windowStart ?? 0
-  const wEnd = frame?.windowEnd ?? (input.k ? input.k - 1 : 0)
-  const windowSum = frame?.windowSum
+  // For fixed window, default to k-1. For variable window, start at -1 but it will be set by frame
+  const wEnd = frame?.windowEnd ?? (fixed && input.k !== undefined ? input.k - 1 : (frame ? -1 : -1))
+  const windowSum = frame?.windowSum ?? (fixed && input.k !== undefined ? input.arr.slice(0, input.k).reduce((a, b) => a + b, 0) : 0)
   const maxSum = frame?.maxSum
   const bestLeft = frame?.bestLeft
   const bestRight = frame?.bestRight
+  const currentSum = frame?.currentSum ?? 0
   
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 28, padding: 32, background: 'var(--bg-canvas)' }}>
       
       {/* Stats */}
       <div style={{ display: 'flex', gap: 24 }}>
-        {windowSum !== undefined && (
+        {fixed && windowSum !== undefined && (
           <div style={{ textAlign: 'center', padding: '10px 20px', borderRadius: 10, background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.3)' }}>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Window Sum</div>
             <div style={{ fontSize: 24, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: 'var(--pointer-b)' }}>{windowSum}</div>
           </div>
         )}
-        {maxSum !== undefined && (
+        {!fixed && frame && (
+          <div style={{ textAlign: 'center', padding: '10px 20px', borderRadius: 10, background: 'rgba(139,92,246,0.1)', border: '1px solid rgba(139,92,246,0.3)' }}>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Current Sum</div>
+            <div style={{ fontSize: 24, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: 'var(--pointer-b)' }}>{currentSum}</div>
+          </div>
+        )}
+        {!fixed && (
+          <div style={{ textAlign: 'center', padding: '10px 20px', borderRadius: 10, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}>
+            <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Target</div>
+            <div style={{ fontSize: 24, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: 'var(--sorted)' }}>{input.target}</div>
+          </div>
+        )}
+        {fixed && maxSum !== undefined && (
           <div style={{ textAlign: 'center', padding: '10px 20px', borderRadius: 10, background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.3)' }}>
             <div style={{ fontSize: 10, color: 'var(--text-muted)', marginBottom: 4 }}>Max Sum</div>
             <div style={{ fontSize: 24, fontFamily: 'JetBrains Mono, monospace', fontWeight: 700, color: 'var(--sorted)' }}>{maxSum}</div>
@@ -303,13 +317,15 @@ function SlidingWindowViz({ frame, input, color, fixed }) {
       
       {/* Window bracket */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-        <div style={{ display: 'flex', gap: 6, marginBottom: 6, paddingLeft: `${wStart * 58}px`, transition: 'padding 0.3s' }}>
-          <div style={{ width: `${(wEnd - wStart + 1) * 58 - 6}px`, height: 3, borderRadius: 2, background: 'var(--pointer-b)', transition: 'width 0.3s, padding 0.3s' }} />
-        </div>
+        {wEnd >= wStart && wEnd >= 0 && (
+          <div style={{ display: 'flex', gap: 6, marginBottom: 6, paddingLeft: `${wStart * 58}px`, transition: 'padding 0.3s' }}>
+            <div style={{ width: `${(wEnd - wStart + 1) * 58 - 6}px`, height: 3, borderRadius: 2, background: 'var(--pointer-b)', transition: 'width 0.3s, padding 0.3s' }} />
+          </div>
+        )}
         
         <div style={{ display: 'flex', gap: 6 }}>
           {arr.map((val, i) => {
-            const inWindow = i >= wStart && i <= wEnd
+            const inWindow = wEnd >= 0 && i >= wStart && i <= wEnd
             const isBest = bestLeft !== undefined && i >= bestLeft && i <= bestRight
             const isLeaving = frame?.leaving === i
             const isEntering = frame?.entering === i
@@ -318,7 +334,7 @@ function SlidingWindowViz({ frame, input, color, fixed }) {
               <Cell key={i} val={val} index={i} color={c}
                 scale={inWindow ? 1.05 : 1}
                 glow={inWindow}
-                dim={!inWindow && !isBest}
+                dim={frame !== null && !inWindow && !isBest}
               />
             )
           })}
@@ -446,10 +462,15 @@ function RainWaterViz({ frame, input, color }) {
   const rightMax = frame?.rightMax ?? new Array(arr.length).fill(0)
   const current = frame?.current ?? -1
   const total = frame?.total ?? 0
-  const phase = frame?.phase ?? 'build'
+  const phase = frame?.phase ?? 'init'
   const maxH = Math.max(...arr, 1)
   const BAR_W = 44
   const BAR_MAX_H = 180
+  
+  // Ensure arrays are valid
+  if (!arr || arr.length === 0) {
+    return <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>No data</div>
+  }
   
   return (
     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 24, padding: 32, background: 'var(--bg-canvas)' }}>
@@ -464,8 +485,8 @@ function RainWaterViz({ frame, input, color }) {
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: BAR_MAX_H + 40 }}>
         {arr.map((height, i) => {
           const waterH = water[i] ?? 0
-          const barH = (height / maxH) * BAR_MAX_H
-          const waterVizH = (waterH / maxH) * BAR_MAX_H
+          const barH = height === 0 ? 0 : (height / maxH) * BAR_MAX_H
+          const waterVizH = waterH === 0 ? 0 : (waterH / maxH) * BAR_MAX_H
           const isCurrent = i === current
           const lmH = leftMax[i] ? (leftMax[i] / maxH) * BAR_MAX_H : 0
           const rmH = rightMax[i] ? (rightMax[i] / maxH) * BAR_MAX_H : 0
@@ -488,14 +509,17 @@ function RainWaterViz({ frame, input, color }) {
                   width: '100%', borderRadius: '4px 4px 0 0',
                   height: barH, minHeight: 4,
                   background: isCurrent
-                    ? `linear-gradient(180deg, var(--compare) 0%, var(--compare)BB 100%)`
+                    ? `linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%)`
                     : phase === 'leftMax' && i <= current
-                      ? `linear-gradient(180deg, var(--pointer-a) 0%, var(--pointer-a)BB 100%)`
+                      ? `linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%)`
                       : phase === 'rightMax' && i >= current
-                        ? `linear-gradient(180deg, var(--pointer-b) 0%, var(--pointer-b)BB 100%)`
-                        : `linear-gradient(180deg, var(--primary) 0%, var(--primary)BB 100%)`,
-                  boxShadow: isCurrent ? `0 0 12px var(--compare)55` : 'none',
-                  transition: 'all 0.2s'
+                        ? `linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%)`
+                        : phase === 'fill' && i === current
+                          ? `linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%)`
+                        : `linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%)`,
+                  boxShadow: isCurrent ? `0 0 12px rgba(255,255,255,0.5)` : 'none',
+                  transition: 'all 0.2s',
+                  border: '1px solid rgba(255,255,255,0.2)'
                 }} />
               </div>
               <div style={{ fontSize: 10, fontFamily: 'JetBrains Mono, monospace', color: 'var(--text-muted)', marginTop: 4 }}>{height}</div>

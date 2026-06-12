@@ -58,14 +58,14 @@ export function* slidingWindowFixed({ arr, k }) {
 export function* slidingWindowVariable({ arr, target }) {
   let left = 0, currentSum = 0, maxLen = 0, bestLeft = 0, bestRight = 0
   
-  yield { array: arr, left, right: -1, currentSum, maxLen, label: `Find longest subarray with sum ≤ ${target}` }
+  yield { array: arr, windowStart: 0, windowEnd: -1, currentSum, maxLen, label: `Find longest subarray with sum ≤ ${target}` }
   
   for (let right = 0; right < arr.length; right++) {
     currentSum += arr[right]
-    yield { array: arr, left, right, currentSum, maxLen, label: `Expand: add arr[${right}]=${arr[right]}, sum=${currentSum}` }
+    yield { array: arr, windowStart: left, windowEnd: right, currentSum, maxLen, label: `Expand: add arr[${right}]=${arr[right]}, sum=${currentSum}` }
     
     while (currentSum > target && left <= right) {
-      yield { array: arr, left, right, currentSum, maxLen, label: `sum=${currentSum} > ${target}, shrink from left, remove ${arr[left]}` }
+      yield { array: arr, windowStart: left, windowEnd: right, currentSum, maxLen, label: `sum=${currentSum} > ${target}, shrink from left, remove ${arr[left]}` }
       currentSum -= arr[left]
       left++
     }
@@ -74,11 +74,11 @@ export function* slidingWindowVariable({ arr, target }) {
       maxLen = right - left + 1
       bestLeft = left
       bestRight = right
-      yield { array: arr, left, right, currentSum, maxLen, bestLeft, bestRight, label: `New longest window [${left}..${right}], length=${maxLen}, sum=${currentSum}` }
+      yield { array: arr, windowStart: left, windowEnd: right, currentSum, maxLen, bestLeft, bestRight, label: `New longest window [${left}..${right}], length=${maxLen}, sum=${currentSum}` }
     }
   }
   
-  yield { array: arr, left: bestLeft, right: bestRight, currentSum, maxLen, bestLeft, bestRight, label: `Longest subarray: [${bestLeft}..${bestRight}], length=${maxLen}` }
+  yield { array: arr, windowStart: bestLeft, windowEnd: bestRight, currentSum, maxLen, bestLeft, bestRight, label: `Longest subarray: [${bestLeft}..${bestRight}], length=${maxLen}` }
 }
 
 // Prefix Sum
