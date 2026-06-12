@@ -651,16 +651,136 @@ function RPNVisualizer({ frame, input, setInput }) {
 // ─── Stack Using Queues Visualizer ────────────────────────────────────────────
 
 function StackUsingQueuesVisualizer({ frame, input, setInput, playback }) {
+  const [newValue, setNewValue] = useState(50)
   const q1 = frame?.q1 ?? []
   const q2 = frame?.q2 ?? []
   const operation = frame?.operation
   const value = frame?.value
   
+  function addPush() {
+    const newOps = [...input.operations, { type: 'push', value: newValue }]
+    setInput({ operations: newOps })
+    setNewValue(newValue + 10)
+    playback.reset()
+  }
+  
+  function addPop() {
+    const newOps = [...input.operations, { type: 'pop' }]
+    setInput({ operations: newOps })
+    playback.reset()
+  }
+  
+  function removeOperation(idx) {
+    const newOps = input.operations.filter((_, i) => i !== idx)
+    setInput({ operations: newOps })
+    playback.reset()
+  }
+  
+  function editOperation(idx, newOp) {
+    const newOps = [...input.operations]
+    newOps[idx] = newOp
+    setInput({ operations: newOps })
+    playback.reset()
+  }
+  
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-canvas)', padding: 24, gap: 32 }}>
-      <div style={{ fontSize: 14, color: 'var(--text-secondary)', maxWidth: 500, textAlign: 'center' }}>
-        Stack implementation using 2 queues. Push operations maintain LIFO order by transferring elements.
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-canvas)', overflow: 'hidden' }}>
+      
+      {/* Operations Builder Toolbar */}
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginRight: 4 }}>Build Operations:</span>
+        
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input
+            type="number"
+            value={newValue}
+            onChange={(e) => setNewValue(parseInt(e.target.value) || 0)}
+            style={{
+              width: 70,
+              padding: '4px 8px',
+              borderRadius: 5,
+              border: '1px solid var(--border)',
+              background: 'var(--bg-canvas)',
+              color: 'var(--text-primary)',
+              fontSize: 12,
+              fontFamily: 'JetBrains Mono, monospace'
+            }}
+          />
+          <button onClick={addPush} style={{
+            padding: '4px 12px',
+            borderRadius: 5,
+            border: '1px solid #8B5CF6',
+            background: 'rgba(139,92,246,0.1)',
+            color: '#8B5CF6',
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}>
+            + Push
+          </button>
+        </div>
+        
+        <button onClick={addPop} style={{
+          padding: '4px 12px',
+          borderRadius: 5,
+          border: '1px solid #EF4444',
+          background: 'rgba(239,68,68,0.1)',
+          color: '#EF4444',
+          fontSize: 11,
+          fontWeight: 600,
+          cursor: 'pointer'
+        }}>
+          + Pop
+        </button>
+        
+        <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 4px' }} />
+        
+        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+          Operations: {input.operations.length}
+        </div>
       </div>
+      
+      {/* Operations List */}
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', maxHeight: 120, overflowY: 'auto' }}>
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          {input.operations.map((op, idx) => (
+            <div key={idx} style={{
+              padding: '4px 8px',
+              borderRadius: 5,
+              background: op.type === 'push' ? 'rgba(139,92,246,0.1)' : 'rgba(239,68,68,0.1)',
+              border: `1px solid ${op.type === 'push' ? '#8B5CF6' : '#EF4444'}`,
+              color: op.type === 'push' ? '#8B5CF6' : '#EF4444',
+              fontSize: 11,
+              fontFamily: 'JetBrains Mono, monospace',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}>
+              <span>{op.type === 'push' ? `push(${op.value})` : 'pop()'}</span>
+              <button onClick={() => removeOperation(idx)} style={{
+                background: 'none',
+                border: 'none',
+                color: 'inherit',
+                cursor: 'pointer',
+                padding: 0,
+                fontSize: 10
+              }}>✕</button>
+            </div>
+          ))}
+          {input.operations.length === 0 && (
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '4px 0' }}>
+              No operations yet - add push/pop operations above
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Visualization */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 32, overflowY: 'auto' }}>
+        <div style={{ fontSize: 14, color: 'var(--text-secondary)', maxWidth: 500, textAlign: 'center' }}>
+          Stack implementation using 2 queues. Push operations maintain LIFO order by transferring elements.
+        </div>
       
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         {/* Queue 1 */}
@@ -729,6 +849,7 @@ function StackUsingQueuesVisualizer({ frame, input, setInput, playback }) {
           {operation === 'transfer' && `Transferring: ${value}`}
         </div>
       )}
+      </div>
     </div>
   )
 }
@@ -736,16 +857,129 @@ function StackUsingQueuesVisualizer({ frame, input, setInput, playback }) {
 // ─── Queue Using Stacks Visualizer ────────────────────────────────────────────
 
 function QueueUsingStacksVisualizer({ frame, input, setInput, playback }) {
+  const [newValue, setNewValue] = useState(50)
   const s1 = frame?.s1 ?? []
   const s2 = frame?.s2 ?? []
   const operation = frame?.operation
   const value = frame?.value
   
+  function addEnqueue() {
+    const newOps = [...input.operations, { type: 'enqueue', value: newValue }]
+    setInput({ operations: newOps })
+    setNewValue(newValue + 10)
+    playback.reset()
+  }
+  
+  function addDequeue() {
+    const newOps = [...input.operations, { type: 'dequeue' }]
+    setInput({ operations: newOps })
+    playback.reset()
+  }
+  
+  function removeOperation(idx) {
+    const newOps = input.operations.filter((_, i) => i !== idx)
+    setInput({ operations: newOps })
+    playback.reset()
+  }
+  
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-canvas)', padding: 24, gap: 32 }}>
-      <div style={{ fontSize: 14, color: 'var(--text-secondary)', maxWidth: 500, textAlign: 'center' }}>
-        Queue implementation using 2 stacks. Enqueue to s1, dequeue from s2 (transfer when empty).
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-canvas)', overflow: 'hidden' }}>
+      
+      {/* Operations Builder Toolbar */}
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginRight: 4 }}>Build Operations:</span>
+        
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input
+            type="number"
+            value={newValue}
+            onChange={(e) => setNewValue(parseInt(e.target.value) || 0)}
+            style={{
+              width: 70,
+              padding: '4px 8px',
+              borderRadius: 5,
+              border: '1px solid var(--border)',
+              background: 'var(--bg-canvas)',
+              color: 'var(--text-primary)',
+              fontSize: 12,
+              fontFamily: 'JetBrains Mono, monospace'
+            }}
+          />
+          <button onClick={addEnqueue} style={{
+            padding: '4px 12px',
+            borderRadius: 5,
+            border: '1px solid #EC4899',
+            background: 'rgba(236,72,153,0.1)',
+            color: '#EC4899',
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}>
+            + Enqueue
+          </button>
+        </div>
+        
+        <button onClick={addDequeue} style={{
+          padding: '4px 12px',
+          borderRadius: 5,
+          border: '1px solid #06B6D4',
+          background: 'rgba(6,182,212,0.1)',
+          color: '#06B6D4',
+          fontSize: 11,
+          fontWeight: 600,
+          cursor: 'pointer'
+        }}>
+          + Dequeue
+        </button>
+        
+        <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 4px' }} />
+        
+        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+          Operations: {input.operations.length}
+        </div>
       </div>
+      
+      {/* Operations List */}
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', maxHeight: 120, overflowY: 'auto' }}>
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          {input.operations.map((op, idx) => (
+            <div key={idx} style={{
+              padding: '4px 8px',
+              borderRadius: 5,
+              background: op.type === 'enqueue' ? 'rgba(236,72,153,0.1)' : 'rgba(6,182,212,0.1)',
+              border: `1px solid ${op.type === 'enqueue' ? '#EC4899' : '#06B6D4'}`,
+              color: op.type === 'enqueue' ? '#EC4899' : '#06B6D4',
+              fontSize: 11,
+              fontFamily: 'JetBrains Mono, monospace',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6
+            }}>
+              <span>{op.type === 'enqueue' ? `enqueue(${op.value})` : 'dequeue()'}</span>
+              <button onClick={() => removeOperation(idx)} style={{
+                background: 'none',
+                border: 'none',
+                color: 'inherit',
+                cursor: 'pointer',
+                padding: 0,
+                fontSize: 10
+              }}>✕</button>
+            </div>
+          ))}
+          {input.operations.length === 0 && (
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '4px 0' }}>
+              No operations yet - add enqueue/dequeue operations above
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Visualization */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 32, overflowY: 'auto' }}>
+        <div style={{ fontSize: 14, color: 'var(--text-secondary)', maxWidth: 500, textAlign: 'center' }}>
+          Queue implementation using 2 stacks. Enqueue to s1, dequeue from s2 (transfer when empty).
+        </div>
       
       <div style={{ display: 'flex', gap: 40 }}>
         {/* Stack 1 */}
@@ -816,6 +1050,7 @@ function QueueUsingStacksVisualizer({ frame, input, setInput, playback }) {
           {operation === 'transfer' && `Transferring: ${value}`}
         </div>
       )}
+      </div>
     </div>
   )
 }
@@ -823,17 +1058,158 @@ function QueueUsingStacksVisualizer({ frame, input, setInput, playback }) {
 // ─── Min Stack Visualizer ─────────────────────────────────────────────────────
 
 function MinStackVisualizer({ frame, input, setInput, playback }) {
+  const [newValue, setNewValue] = useState(50)
   const stack = frame?.stack ?? []
   const minStack = frame?.minStack ?? []
   const operation = frame?.operation
   const value = frame?.value
   const currentMin = frame?.currentMin
   
+  function addPush() {
+    const newOps = [...input.operations, { type: 'push', value: newValue }]
+    setInput({ operations: newOps })
+    setNewValue(newValue - 5)
+    playback.reset()
+  }
+  
+  function addPop() {
+    const newOps = [...input.operations, { type: 'pop' }]
+    setInput({ operations: newOps })
+    playback.reset()
+  }
+  
+  function addGetMin() {
+    const newOps = [...input.operations, { type: 'getMin' }]
+    setInput({ operations: newOps })
+    playback.reset()
+  }
+  
+  function removeOperation(idx) {
+    const newOps = input.operations.filter((_, i) => i !== idx)
+    setInput({ operations: newOps })
+    playback.reset()
+  }
+  
   return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--bg-canvas)', padding: 24, gap: 32 }}>
-      <div style={{ fontSize: 14, color: 'var(--text-secondary)', maxWidth: 500, textAlign: 'center' }}>
-        Stack with O(1) minimum retrieval. MinStack tracks minimum at each level.
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', background: 'var(--bg-canvas)', overflow: 'hidden' }}>
+      
+      {/* Operations Builder Toolbar */}
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', marginRight: 4 }}>Build Operations:</span>
+        
+        <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+          <input
+            type="number"
+            value={newValue}
+            onChange={(e) => setNewValue(parseInt(e.target.value) || 0)}
+            style={{
+              width: 70,
+              padding: '4px 8px',
+              borderRadius: 5,
+              border: '1px solid var(--border)',
+              background: 'var(--bg-canvas)',
+              color: 'var(--text-primary)',
+              fontSize: 12,
+              fontFamily: 'JetBrains Mono, monospace'
+            }}
+          />
+          <button onClick={addPush} style={{
+            padding: '4px 12px',
+            borderRadius: 5,
+            border: '1px solid #06B6D4',
+            background: 'rgba(6,182,212,0.1)',
+            color: '#06B6D4',
+            fontSize: 11,
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}>
+            + Push
+          </button>
+        </div>
+        
+        <button onClick={addPop} style={{
+          padding: '4px 12px',
+          borderRadius: 5,
+          border: '1px solid #EF4444',
+          background: 'rgba(239,68,68,0.1)',
+          color: '#EF4444',
+          fontSize: 11,
+          fontWeight: 600,
+          cursor: 'pointer'
+        }}>
+          + Pop
+        </button>
+        
+        <button onClick={addGetMin} style={{
+          padding: '4px 12px',
+          borderRadius: 5,
+          border: '1px solid #10B981',
+          background: 'rgba(16,185,129,0.1)',
+          color: '#10B981',
+          fontSize: 11,
+          fontWeight: 600,
+          cursor: 'pointer'
+        }}>
+          + GetMin
+        </button>
+        
+        <div style={{ width: 1, height: 20, background: 'var(--border)', margin: '0 4px' }} />
+        
+        <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+          Operations: {input.operations.length}
+        </div>
       </div>
+      
+      {/* Operations List */}
+      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', maxHeight: 120, overflowY: 'auto' }}>
+        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+          {input.operations.map((op, idx) => {
+            const colors = {
+              push: { bg: 'rgba(6,182,212,0.1)', border: '#06B6D4', color: '#06B6D4' },
+              pop: { bg: 'rgba(239,68,68,0.1)', border: '#EF4444', color: '#EF4444' },
+              getMin: { bg: 'rgba(16,185,129,0.1)', border: '#10B981', color: '#10B981' }
+            }
+            const style = colors[op.type] || colors.push
+            
+            return (
+              <div key={idx} style={{
+                padding: '4px 8px',
+                borderRadius: 5,
+                background: style.bg,
+                border: `1px solid ${style.border}`,
+                color: style.color,
+                fontSize: 11,
+                fontFamily: 'JetBrains Mono, monospace',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6
+              }}>
+                <span>{op.type === 'push' ? `push(${op.value})` : op.type === 'pop' ? 'pop()' : 'getMin()'}</span>
+                <button onClick={() => removeOperation(idx)} style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  padding: 0,
+                  fontSize: 10
+                }}>✕</button>
+              </div>
+            )
+          })}
+          {input.operations.length === 0 && (
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', padding: '4px 0' }}>
+              No operations yet - add push/pop/getMin operations above
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Visualization */}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 32, overflowY: 'auto' }}>
+        <div style={{ fontSize: 14, color: 'var(--text-secondary)', maxWidth: 500, textAlign: 'center' }}>
+          Stack with O(1) minimum retrieval. MinStack tracks minimum at each level.
+        </div>
       
       <div style={{ display: 'flex', gap: 40 }}>
         {/* Main Stack */}
@@ -911,6 +1287,7 @@ function MinStackVisualizer({ frame, input, setInput, playback }) {
             {operation === 'pop-min' && `Removed min: ${value}`}
           </div>
         )}
+      </div>
       </div>
     </div>
   )
