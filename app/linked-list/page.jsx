@@ -117,7 +117,7 @@ const ALGOS = {
     fn: intersectionOfLists,
     defaultInput: { values1: [1, 2, 3, 6, 7], values2: [4, 5, 6, 7], intersectAt: 2 },
     description: 'Switch lists when reaching end — both pointers travel equal distance',
-    color: 'var(--dp-fill)',
+    color: '#A78BFA',
     problems: [
       { id: 160, title: 'Intersection of Two Linked Lists', difficulty: 'Easy', url: 'https://leetcode.com/problems/intersection-of-two-linked-lists/' },
     ],
@@ -659,9 +659,9 @@ export default function LinkedListPage() {
                 <button key={key} onClick={() => handleAlgoChange(key)} style={{
                   padding: '5px 12px', borderRadius: 7, border: '1px solid',
                   borderColor: algoKey === key ? color : 'var(--border)',
-                  background: algoKey === key ? `${color}18` : 'transparent',
-                  color: algoKey === key ? color : 'var(--text-secondary)',
-                  fontSize: 12, fontWeight: algoKey === key ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s'
+                  background: algoKey === key ? `${color}18` : 'var(--bg-canvas)',
+                  color: algoKey === key ? color : 'var(--text-primary)',
+                  fontSize: 12, fontWeight: algoKey === key ? 600 : 500, cursor: 'pointer', transition: 'all 0.15s'
                 }}>{label}</button>
               ))}
             </div>
