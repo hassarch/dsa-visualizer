@@ -39,11 +39,22 @@ export default function GraphPage() {
   const current = frame?.current
   const frontier = new Set([...queue, ...stack])
 
+  // Debug logging
+  useEffect(() => {
+    console.log('=== Frame Update ===')
+    console.log('Frame:', frame)
+    console.log('Visited:', [...visited])
+    console.log('Current:', current)
+    console.log('Queue:', queue)
+    console.log('Stack:', stack)
+    console.log('Frontier:', [...frontier])
+  }, [frame, visited, current, queue, stack, frontier])
+
   function getNodeColor(node) {
     if (node === current) return '#FBBF24' // Current (Amber)
     if (frontier.has(node) && !visited.has(node)) return '#38BDF8' // In queue/stack (Cyan)
     if (visited.has(node)) return '#34D399' // Visited (Emerald)
-    return '#52525b' // Default (Dim grey)
+    return '#71717a' // Default (lighter grey for better visibility)
   }
 
   function getEdgeColor(u, v) {
@@ -181,7 +192,7 @@ export default function GraphPage() {
                     const isFrontier = frontier.has(node) && !isVisited
 
                     return (
-                      <g key={node}>
+                      <g key={node} style={{ opacity: 1 }}>
                         {/* Glow ring for active */}
                         {isActive && (
                           <circle cx={pos.x} cy={pos.y} r={48}
@@ -191,19 +202,21 @@ export default function GraphPage() {
 
                         {/* Node circle */}
                         <circle cx={pos.x} cy={pos.y} r={isActive ? 38 : 32}
-                          fill={isActive ? 'rgba(251,191,36,0.06)' : isFrontier ? 'rgba(56,189,248,0.04)' : isVisited ? 'rgba(52,211,153,0.04)' : 'transparent'}
+                          fill={isActive ? 'rgba(251,191,36,0.2)' : isFrontier ? 'rgba(56,189,248,0.15)' : isVisited ? 'rgba(52,211,153,0.2)' : 'rgba(113,113,122,0.1)'}
                           stroke={color}
-                          strokeWidth={isActive ? 3 : isVisited || isFrontier ? 2 : 1.5}
+                          strokeWidth={isActive ? 3.5 : isVisited || isFrontier ? 2.5 : 2}
+                          opacity={1}
                           style={{ transition: 'all 0.3s', filter: isActive ? 'url(#node-glow)' : 'none' }}
                         />
 
                         {/* Node label */}
                         <text x={pos.x} y={pos.y + 8} textAnchor="middle"
-                          fill={color === '#52525b' ? '#71717a' : color} 
+                          fill={color} 
                           fontSize={isActive ? '22px' : '18px'} 
                           fontWeight="700"
                           fontFamily="JetBrains Mono, monospace"
-                          style={{ transition: 'all 0.3s' }}>
+                          opacity={1}
+                          style={{ transition: 'all 0.3s', pointerEvents: 'none' }}>
                           {node}
                         </text>
                       </g>
