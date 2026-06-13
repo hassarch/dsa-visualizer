@@ -4,7 +4,7 @@ import { usePlayback } from '../../hooks/usePlayback'
 import { bstInsert, bstSearch, inorderTraversal, preorderTraversal, postorderTraversal, levelOrderTraversal, treeHeight } from '../../engines/binaryTreeEngines'
 import PlaybackControls from '../../components/PlaybackControls'
 import Sidebar from '../../components/Sidebar'
-import { ExternalLink, Clock, Database, Zap, BookOpen, Code2 } from 'lucide-react'
+import { ExternalLink, Clock, Zap, BookOpen, Code2 } from 'lucide-react'
 
 const ALGOS = {
   bstInsert: {
@@ -150,6 +150,69 @@ export default function BinaryTreePage() {
             ))}
           </div>
 
+          {/* Input Controls */}
+          <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border)', background: 'var(--bg-surface)', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>Tree values:</span>
+              <input
+                type="text"
+                value={Array.isArray(input.values) ? input.values.join(', ') : ''}
+                onChange={(e) => {
+                  const values = e.target.value.split(',').map(v => parseInt(v.trim())).filter(v => !isNaN(v))
+                  setInput({ ...input, values })
+                  playback.reset()
+                }}
+                style={{
+                  padding: '4px 8px', borderRadius: 5, border: '1px solid var(--border)',
+                  background: 'var(--bg-canvas)', color: 'var(--text-primary)',
+                  fontSize: 12, fontFamily: 'JetBrains Mono, monospace', width: 200
+                }}
+                placeholder="8, 3, 10, 1, 6, 14, 4, 7"
+              />
+            </div>
+            
+            {(algoKey === 'bstInsert' || algoKey === 'bstSearch') && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)', fontWeight: 500 }}>
+                  {algoKey === 'bstInsert' ? 'Insert:' : 'Search:'}
+                </span>
+                <input
+                  type="number"
+                  value={algoKey === 'bstInsert' ? (input.insertVal || '') : (input.searchVal || '')}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value)
+                    if (algoKey === 'bstInsert') {
+                      setInput({ ...input, insertVal: isNaN(val) ? '' : val })
+                    } else {
+                      setInput({ ...input, searchVal: isNaN(val) ? '' : val })
+                    }
+                    playback.reset()
+                  }}
+                  style={{
+                    padding: '4px 8px', borderRadius: 5, border: '1px solid var(--border)',
+                    background: 'var(--bg-canvas)', color: 'var(--text-primary)',
+                    fontSize: 12, fontFamily: 'JetBrains Mono, monospace', width: 60
+                  }}
+                  placeholder={algoKey === 'bstInsert' ? '5' : '6'}
+                />
+              </div>
+            )}
+            
+            <button
+              onClick={() => {
+                setInput(ALGOS[algoKey].defaultInput)
+                playback.reset()
+              }}
+              style={{
+                padding: '4px 8px', borderRadius: 5, border: '1px solid var(--border)',
+                background: 'transparent', color: 'var(--text-secondary)',
+                fontSize: 11, cursor: 'pointer', transition: 'all 0.15s'
+              }}
+            >
+              Reset
+            </button>
+          </div>
+
           {/* Description */}
           <div style={{ padding: '8px 20px', background: 'var(--bg-surface)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ width: 8, height: 8, borderRadius: '50%', background: algo.color, flexShrink: 0 }} />
@@ -217,8 +280,10 @@ function TreeCanvas({ frame, algoKey, algo }) {
   const foundId = frame?.foundId
   const newId = frame?.newId
   const heights = frame?.heights ?? {}
+  const currentId = frame?.currentId // For inorder traversal green highlight
 
   function getNodeColor(node) {
+    if (node.id === currentId) return '#10B981' // Green for current visited node (inorder)
     if (node.id === foundId) return 'var(--sorted)'
     if (foundId === -1) return 'var(--swap)'
     if (node.id === newId) return 'var(--sorted)'
@@ -240,8 +305,18 @@ function TreeCanvas({ frame, algoKey, algo }) {
     <svg width="100%" height="100%" viewBox="0 0 720 400" style={{ display: 'block' }}>
       <defs>
         <filter id="tree-glow">
-          <feGaussianBlur stdDeviation="4" result="blur" />
-          <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          <feGaussianBlur stdDeviation="3" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+        <filter id="tree-new-glow">
+          <feGaussianBlur stdDeviation="5" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
         </filter>
       </defs>
 
@@ -249,6 +324,9 @@ function TreeCanvas({ frame, algoKey, algo }) {
       {nodes.map(node => {
         const pos = positions[node.id]
         if (!pos) return null
+        
+        const isInPath = path.has(node.id)
+        const isActiveNode = highlight.has(node.id)
 
         return (
           <g key={`edges-${node.id}`}>
@@ -256,18 +334,36 @@ function TreeCanvas({ frame, algoKey, algo }) {
               <line
                 x1={pos.x} y1={pos.y}
                 x2={positions[node.leftId].x} y2={positions[node.leftId].y}
-                stroke={path.has(node.id) && path.has(node.leftId) ? algo.color : 'var(--border)'}
-                strokeWidth={path.has(node.id) && path.has(node.leftId) ? 2 : 1.5}
-                style={{ transition: 'stroke 0.3s' }}
+                stroke={
+                  isInPath && path.has(node.leftId) ? algo.color :
+                  isActiveNode && highlight.has(node.leftId) ? `${algo.color}88` :
+                  'var(--border)'
+                }
+                strokeWidth={
+                  isInPath && path.has(node.leftId) ? 3 :
+                  isActiveNode && highlight.has(node.leftId) ? 2.5 :
+                  1.5
+                }
+                style={{ transition: 'all 0.3s ease' }}
+                strokeDasharray={isActiveNode && highlight.has(node.leftId) ? '5,5' : 'none'}
               />
             )}
             {node.rightId && positions[node.rightId] && (
               <line
                 x1={pos.x} y1={pos.y}
                 x2={positions[node.rightId].x} y2={positions[node.rightId].y}
-                stroke={path.has(node.id) && path.has(node.rightId) ? algo.color : 'var(--border)'}
-                strokeWidth={path.has(node.id) && path.has(node.rightId) ? 2 : 1.5}
-                style={{ transition: 'stroke 0.3s' }}
+                stroke={
+                  isInPath && path.has(node.rightId) ? algo.color :
+                  isActiveNode && highlight.has(node.rightId) ? `${algo.color}88` :
+                  'var(--border)'
+                }
+                strokeWidth={
+                  isInPath && path.has(node.rightId) ? 3 :
+                  isActiveNode && highlight.has(node.rightId) ? 2.5 :
+                  1.5
+                }
+                style={{ transition: 'all 0.3s ease' }}
+                strokeDasharray={isActiveNode && highlight.has(node.rightId) ? '5,5' : 'none'}
               />
             )}
           </g>
@@ -281,29 +377,61 @@ function TreeCanvas({ frame, algoKey, algo }) {
         const color = getNodeColor(node)
         const isActive = highlight.has(node.id)
         const isNew = node.id === newId
+        const isInPath = path.has(node.id)
+        const isCurrent = node.id === currentId // Green visited node
         const h = heights[node.id]
 
         return (
-          <g key={node.id}>
-            {/* Glow */}
-            {(isActive || isNew) && (
-              <circle cx={pos.x} cy={pos.y} r={26} fill="none" stroke={color} strokeWidth={1} opacity={0.2} filter="url(#tree-glow)" />
+          <g key={node.id} opacity={1} style={{ visibility: 'visible' }}>
+            {/* Glow for active/new/current nodes */}
+            {(isActive || isNew || isCurrent) && (
+              <circle cx={pos.x} cy={pos.y} r={28} fill="none" stroke={color} strokeWidth={1.5} opacity={0.3} filter="url(#tree-glow)" />
+            )}
+
+            {/* Extra glow for newly inserted node */}
+            {isNew && (
+              <circle cx={pos.x} cy={pos.y} r={32} fill="none" stroke={color} strokeWidth={1} opacity={0.2} filter="url(#tree-new-glow)" />
+            )}
+
+            {/* Extra glow for current visited node */}
+            {isCurrent && (
+              <circle cx={pos.x} cy={pos.y} r={32} fill="none" stroke={color} strokeWidth={1} opacity={0.25} filter="url(#tree-glow)" />
             )}
 
             {/* Node circle */}
             <circle
-              cx={pos.x} cy={pos.y} r={isActive || isNew ? 22 : 20}
-              fill={`${color}18`} stroke={color}
-              strokeWidth={isActive || isNew ? 2.5 : 1.5}
-              style={{ transition: 'all 0.3s' }}
+              cx={pos.x} cy={pos.y} r={isActive || isNew || isCurrent ? 22 : isInPath ? 21 : 20}
+              fill={isCurrent ? 'rgba(16,185,129,0.2)' : `${color}22`} 
+              stroke={color}
+              strokeWidth={isNew ? 3.5 : isCurrent ? 3.5 : isActive ? 3 : isInPath ? 2.5 : 2}
+              opacity={1}
+              style={{ transition: 'all 0.3s ease' }}
+              strokeDasharray={isActive && !isNew && !isCurrent ? '3,3' : 'none'}
             />
 
             {/* Value */}
             <text x={pos.x} y={pos.y + 5} textAnchor="middle"
-              fill={color} fontSize={14} fontWeight="700" fontFamily="JetBrains Mono, monospace"
-              style={{ transition: 'all 0.3s' }}>
+              fill={color} fontSize={14} fontWeight={isActive || isNew || isCurrent ? 800 : 700} fontFamily="JetBrains Mono, monospace"
+              opacity={1}
+              style={{ transition: 'all 0.3s ease' }}>
               {node.val}
             </text>
+
+            {/* Current visited indicator */}
+            {isCurrent && (
+              <text x={pos.x} y={pos.y - 30} textAnchor="middle"
+                fill={color} fontSize={10} fontWeight="600" fontFamily="JetBrains Mono, monospace">
+                ✓ VISIT
+              </text>
+            )}
+
+            {/* New node indicator */}
+            {isNew && !isCurrent && (
+              <text x={pos.x} y={pos.y - 30} textAnchor="middle"
+                fill={color} fontSize={10} fontWeight="600" fontFamily="JetBrains Mono, monospace">
+                NEW
+              </text>
+            )}
 
             {/* Height label */}
             {h !== undefined && (

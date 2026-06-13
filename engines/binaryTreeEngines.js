@@ -51,6 +51,14 @@ export function* bstInsert({ values, insertVal }) {
     root = insertNode(root, v)
   }
 
+  // Handle empty tree case
+  if (!root) {
+    root = makeNode(insertVal)
+    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [root.id], path: [root.id], newId: root.id, label: `Inserted ${insertVal} as root (tree was empty)` }
+    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [], path: [], newId: null, label: `✓ Insert complete` }
+    return
+  }
+
   yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [], path: [], newId: null, label: `Inserting ${insertVal} into BST` }
 
   // Now animate the insert
@@ -65,7 +73,10 @@ export function* bstInsert({ values, insertVal }) {
       yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [curr.id], path: [...path], newId: null, label: `${insertVal} < ${curr.val}, go LEFT` }
       if (!curr.left) {
         curr.left = makeNode(insertVal)
-        yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [curr.left.id], path: [...path, curr.left.id], newId: curr.left.id, label: `Inserted ${insertVal} as left child of ${curr.val}` }
+        const newPath = [...path, curr.left.id]
+        yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [curr.left.id], path: newPath, newId: curr.left.id, label: `Inserted ${insertVal} as left child of ${curr.val}` }
+        // Add a brief pause to highlight the newly inserted node
+        yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [curr.left.id], path: newPath, newId: curr.left.id, label: `✨ New node ${insertVal} successfully added` }
         break
       }
       curr = curr.left
@@ -73,7 +84,10 @@ export function* bstInsert({ values, insertVal }) {
       yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [curr.id], path: [...path], newId: null, label: `${insertVal} > ${curr.val}, go RIGHT` }
       if (!curr.right) {
         curr.right = makeNode(insertVal)
-        yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [curr.right.id], path: [...path, curr.right.id], newId: curr.right.id, label: `Inserted ${insertVal} as right child of ${curr.val}` }
+        const newPath = [...path, curr.right.id]
+        yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [curr.right.id], path: newPath, newId: curr.right.id, label: `Inserted ${insertVal} as right child of ${curr.val}` }
+        // Add a brief pause to highlight the newly inserted node
+        yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [curr.right.id], path: newPath, newId: curr.right.id, label: `✨ New node ${insertVal} successfully added` }
         break
       }
       curr = curr.right
@@ -129,20 +143,20 @@ export function* inorderTraversal({ values }) {
 
   const visited = []
 
-  yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [], visited: [], label: `Inorder: Left → Root → Right (gives sorted order for BST)` }
+  yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [], visited: [], currentId: null, label: `Inorder: Left → Root → Right (gives sorted order for BST)` }
 
   function* inorder(node) {
     if (!node) return
-    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [node.id], visited: [...visited], label: `Go LEFT from ${node.val}` }
+    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [node.id], visited: [...visited], currentId: null, label: `Go LEFT from ${node.val}` }
     yield* inorder(node.left)
     visited.push(node.val)
-    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [node.id], visited: [...visited], label: `Visit ${node.val} (add to result)` }
-    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [node.id], visited: [...visited], label: `Go RIGHT from ${node.val}` }
+    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [node.id], visited: [...visited], currentId: node.id, label: `Visit ${node.val} (add to result)` }
+    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [node.id], visited: [...visited], currentId: null, label: `Go RIGHT from ${node.val}` }
     yield* inorder(node.right)
   }
 
   yield* inorder(root)
-  yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [], visited: [...visited], label: `✓ Inorder result: [${visited.join(', ')}]` }
+  yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [], visited: [...visited], currentId: null, label: `✓ Inorder result: [${visited.join(', ')}]` }
 }
 
 // Preorder traversal (Root → Left → Right)
@@ -152,18 +166,18 @@ export function* preorderTraversal({ values }) {
 
   const visited = []
 
-  yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [], visited: [], label: `Preorder: Root → Left → Right` }
+  yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [], visited: [], currentId: null, label: `Preorder: Root → Left → Right` }
 
   function* preorder(node) {
     if (!node) return
     visited.push(node.val)
-    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [node.id], visited: [...visited], label: `Visit ${node.val} (Root first)` }
+    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [node.id], visited: [...visited], currentId: node.id, label: `Visit ${node.val} (Root first)` }
     yield* preorder(node.left)
     yield* preorder(node.right)
   }
 
   yield* preorder(root)
-  yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [], visited: [...visited], label: `✓ Preorder result: [${visited.join(', ')}]` }
+  yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [], visited: [...visited], currentId: null, label: `✓ Preorder result: [${visited.join(', ')}]` }
 }
 
 // Postorder traversal (Left → Right → Root)
@@ -173,20 +187,20 @@ export function* postorderTraversal({ values }) {
 
   const visited = []
 
-  yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [], visited: [], label: `Postorder: Left → Right → Root` }
+  yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [], visited: [], currentId: null, label: `Postorder: Left → Right → Root` }
 
   function* postorder(node) {
     if (!node) return
-    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [node.id], visited: [...visited], label: `Go LEFT from ${node.val}` }
+    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [node.id], visited: [...visited], currentId: null, label: `Go LEFT from ${node.val}` }
     yield* postorder(node.left)
-    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [node.id], visited: [...visited], label: `Go RIGHT from ${node.val}` }
+    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [node.id], visited: [...visited], currentId: null, label: `Go RIGHT from ${node.val}` }
     yield* postorder(node.right)
     visited.push(node.val)
-    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [node.id], visited: [...visited], label: `Visit ${node.val} (Root last)` }
+    yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [node.id], visited: [...visited], currentId: node.id, label: `Visit ${node.val} (Root last)` }
   }
 
   yield* postorder(root)
-  yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [], visited: [...visited], label: `✓ Postorder result: [${visited.join(', ')}]` }
+  yield { nodes: treeToNodes(root), positions: computePositions(root), highlight: [], visited: [...visited], currentId: null, label: `✓ Postorder result: [${visited.join(', ')}]` }
 }
 
 // Level Order (BFS)
