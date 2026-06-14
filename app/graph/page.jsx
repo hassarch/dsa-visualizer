@@ -1,18 +1,108 @@
 'use client'
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { usePlayback } from '../../hooks/usePlayback'
 import { bfsTraversal, dfsTraversal, dijkstraShortestPath, topologicalSort, cycleDetection, connectedComponents } from '../../engines/graphEngines'
 import PlaybackControls from '../../components/PlaybackControls'
-import InfoPanel from '../../components/InfoPanel'
 import Sidebar from '../../components/Sidebar'
 
 const ALGOS = {
-  bfs: { label: 'BFS — Breadth First', fn: bfsTraversal },
-  dfs: { label: 'DFS — Depth First', fn: dfsTraversal },
-  dijkstra: { label: 'Dijkstra — Shortest Path', fn: dijkstraShortestPath },
-  topological: { label: 'Topological Sort', fn: topologicalSort },
-  cycle: { label: 'Cycle Detection', fn: cycleDetection },
-  components: { label: 'Connected Components', fn: connectedComponents },
+  bfs: { 
+    label: 'BFS — Breadth First', 
+    fn: bfsTraversal,
+    pseudocode: [
+      'queue = [start]',
+      'visited = {start}',
+      'while queue not empty:',
+      '  node = queue.dequeue()',
+      '  for each neighbor:',
+      '    if not visited:',
+      '      mark visited',
+      '      queue.enqueue(neighbor)',
+    ],
+    complexity: { time: 'O(V + E)', space: 'O(V)' },
+    description: 'Explores graph level by level using a queue',
+  },
+  dfs: { 
+    label: 'DFS — Depth First', 
+    fn: dfsTraversal,
+    pseudocode: [
+      'function dfs(node):',
+      '  mark node as visited',
+      '  for each neighbor:',
+      '    if not visited:',
+      '      dfs(neighbor)',
+      '  backtrack',
+    ],
+    complexity: { time: 'O(V + E)', space: 'O(V)' },
+    description: 'Explores as far as possible along each branch',
+  },
+  dijkstra: { 
+    label: 'Dijkstra — Shortest Path', 
+    fn: dijkstraShortestPath,
+    pseudocode: [
+      'dist[start] = 0',
+      'dist[all others] = ∞',
+      'pq = [(start, 0)]',
+      'while pq not empty:',
+      '  node = pq.extractMin()',
+      '  for each neighbor:',
+      '    if dist[node] + weight < dist[neighbor]:',
+      '      dist[neighbor] = dist[node] + weight',
+      '      pq.add(neighbor)',
+    ],
+    complexity: { time: 'O((V+E) log V)', space: 'O(V)' },
+    description: 'Finds shortest path using priority queue',
+  },
+  topological: { 
+    label: 'Topological Sort', 
+    fn: topologicalSort,
+    pseudocode: [
+      'compute in-degree for all nodes',
+      'queue = [nodes with in-degree 0]',
+      'while queue not empty:',
+      '  node = queue.dequeue()',
+      '  add node to result',
+      '  for each neighbor:',
+      '    reduce in-degree by 1',
+      '    if in-degree = 0:',
+      '      queue.enqueue(neighbor)',
+    ],
+    complexity: { time: 'O(V + E)', space: 'O(V)' },
+    description: 'Orders nodes respecting dependencies (DAG only)',
+  },
+  cycle: { 
+    label: 'Cycle Detection', 
+    fn: cycleDetection,
+    pseudocode: [
+      'for each node:',
+      '  if not visited:',
+      '    dfs(node):',
+      '      add to recStack',
+      '      for each neighbor:',
+      '        if neighbor in recStack:',
+      '          return CYCLE_FOUND',
+      '        dfs(neighbor)',
+      '      remove from recStack',
+    ],
+    complexity: { time: 'O(V + E)', space: 'O(V)' },
+    description: 'Detects cycles using DFS recursion stack',
+  },
+  components: { 
+    label: 'Connected Components', 
+    fn: connectedComponents,
+    pseudocode: [
+      'components = []',
+      'for each node:',
+      '  if not visited:',
+      '    component = []',
+      '    bfs(node):',
+      '      add to component',
+      '      explore neighbors',
+      '    components.add(component)',
+    ],
+    complexity: { time: 'O(V + E)', space: 'O(V)' },
+    description: 'Finds all disconnected subgraphs',
+  },
 }
 
 const DEFAULT_GRAPH = {
@@ -33,10 +123,22 @@ const NODE_POSITIONS = {
 
 export default function GraphPage() {
   const [algoKey, setAlgoKey] = useState('bfs')
+  const [graphInput, setGraphInput] = useState(DEFAULT_GRAPH)
+  const [startNode, setStartNode] = useState('A')
+  const [endNode, setEndNode] = useState('F')
 
   const genFn = useCallback((g) => ALGOS[algoKey].fn(g), [algoKey])
-  const playback = usePlayback(genFn, DEFAULT_GRAPH)
+  
+  // Memoize the input to prevent infinite loop
+  const currentInput = useMemo(() => ({
+    ...graphInput,
+    start: startNode,
+    ...(algoKey === 'dijkstra' ? { end: endNode } : {}),
+  }), [graphInput, startNode, endNode, algoKey])
+  
+  const playback = usePlayback(genFn, currentInput)
   const frame = playback.currentFrame
+  const algo = ALGOS[algoKey]
 
   const visited = new Set(frame?.visited ?? [])
   const queue = frame?.queue ?? []
@@ -153,8 +255,54 @@ export default function GraphPage() {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <div style={{ fontSize: '11px', color: '#71717a' }}>
-                Start node: <span style={{ color: '#ffffff', fontFamily: 'JetBrains Mono, monospace', fontWeight: 600 }}>A</span>
+                Start: 
+                <select 
+                  value={startNode} 
+                  onChange={(e) => { setStartNode(e.target.value); playback.reset() }}
+                  style={{
+                    marginLeft: 6,
+                    padding: '2px 6px',
+                    borderRadius: 4,
+                    border: '1px solid #1F1F1F',
+                    background: '#050505',
+                    color: '#ffffff',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {DEFAULT_GRAPH.nodes.map(node => (
+                    <option key={node} value={node}>{node}</option>
+                  ))}
+                </select>
               </div>
+              
+              {algoKey === 'dijkstra' && (
+                <div style={{ fontSize: '11px', color: '#71717a' }}>
+                  End: 
+                  <select 
+                    value={endNode} 
+                    onChange={(e) => { setEndNode(e.target.value); playback.reset() }}
+                    style={{
+                      marginLeft: 6,
+                      padding: '2px 6px',
+                      borderRadius: 4,
+                      border: '1px solid #1F1F1F',
+                      background: '#050505',
+                      color: '#ffffff',
+                      fontFamily: 'JetBrains Mono, monospace',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {DEFAULT_GRAPH.nodes.map(node => (
+                      <option key={node} value={node}>{node}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
           </div>
 
@@ -425,10 +573,243 @@ export default function GraphPage() {
           flexShrink: 0,
           paddingRight: 4
         }}>
-          <InfoPanel algoKey={algoKey} currentFrame={frame} playback={playback} />
+          <GraphInfoPanel algo={algo} currentFrame={frame} />
         </div>
 
       </div>
+    </div>
+  )
+}
+
+// Custom Info Panel for Graph Algorithms
+function GraphInfoPanel({ algo, currentFrame }) {
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 16,
+      padding: '16px',
+      borderRadius: '12px',
+      border: '1px solid #1F1F1F',
+      background: '#050505',
+    }}>
+      
+      {/* Current Step */}
+      <div>
+        <div style={{
+          fontSize: '10px',
+          fontWeight: 600,
+          letterSpacing: '0.08em',
+          color: '#71717a',
+          textTransform: 'uppercase',
+          marginBottom: 8,
+        }}>
+          Current Step
+        </div>
+        <div style={{
+          padding: '12px',
+          borderRadius: '8px',
+          background: 'rgba(6,182,212,0.05)',
+          border: '1px solid rgba(6,182,212,0.2)',
+          borderLeft: '3px solid #38BDF8',
+          fontSize: '12px',
+          fontFamily: 'JetBrains Mono, monospace',
+          color: '#ffffff',
+          lineHeight: 1.5,
+          minHeight: 52,
+        }}>
+          {currentFrame?.label || 'Press Play to begin →'}
+        </div>
+      </div>
+
+      {/* Description */}
+      <div>
+        <div style={{
+          fontSize: '10px',
+          fontWeight: 600,
+          letterSpacing: '0.08em',
+          color: '#71717a',
+          textTransform: 'uppercase',
+          marginBottom: 8,
+        }}>
+          Algorithm
+        </div>
+        <div style={{
+          padding: '10px 12px',
+          borderRadius: '8px',
+          background: '#000000',
+          border: '1px solid #1F1F1F',
+          fontSize: '12px',
+          color: '#a1a1aa',
+          lineHeight: 1.5,
+        }}>
+          {algo.description}
+        </div>
+      </div>
+
+      {/* Pseudocode */}
+      <div>
+        <div style={{
+          fontSize: '10px',
+          fontWeight: 600,
+          letterSpacing: '0.08em',
+          color: '#71717a',
+          textTransform: 'uppercase',
+          marginBottom: 8,
+        }}>
+          Pseudocode
+        </div>
+        <div style={{
+          borderRadius: '8px',
+          overflow: 'hidden',
+          border: '1px solid #1F1F1F',
+          background: '#000000',
+        }}>
+          {algo.pseudocode.map((line, i) => (
+            <div
+              key={i}
+              style={{
+                padding: '6px 12px',
+                display: 'flex',
+                gap: 12,
+                borderBottom: i < algo.pseudocode.length - 1 ? '1px solid #1F1F1F' : 'none',
+                fontSize: '11px',
+                fontFamily: 'JetBrains Mono, monospace',
+              }}
+            >
+              <span style={{ color: '#52525b', minWidth: 16, textAlign: 'right' }}>
+                {i + 1}
+              </span>
+              <span style={{ color: '#a1a1aa', whiteSpace: 'pre', flex: 1 }}>
+                {line}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Complexity */}
+      <div>
+        <div style={{
+          fontSize: '10px',
+          fontWeight: 600,
+          letterSpacing: '0.08em',
+          color: '#71717a',
+          textTransform: 'uppercase',
+          marginBottom: 8,
+        }}>
+          Complexity
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div style={{
+            padding: '10px 12px',
+            borderRadius: '8px',
+            background: '#000000',
+            border: '1px solid #1F1F1F',
+          }}>
+            <div style={{ fontSize: '10px', color: '#71717a', marginBottom: 4 }}>
+              Time
+            </div>
+            <div style={{
+              fontSize: '13px',
+              fontFamily: 'JetBrains Mono, monospace',
+              fontWeight: 700,
+              color: '#FBBF24',
+            }}>
+              {algo.complexity.time}
+            </div>
+          </div>
+          <div style={{
+            padding: '10px 12px',
+            borderRadius: '8px',
+            background: '#000000',
+            border: '1px solid #1F1F1F',
+          }}>
+            <div style={{ fontSize: '10px', color: '#71717a', marginBottom: 4 }}>
+              Space
+            </div>
+            <div style={{
+              fontSize: '13px',
+              fontFamily: 'JetBrains Mono, monospace',
+              fontWeight: 700,
+              color: '#8B5CF6',
+            }}>
+              {algo.complexity.space}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div>
+        <div style={{
+          fontSize: '10px',
+          fontWeight: 600,
+          letterSpacing: '0.08em',
+          color: '#71717a',
+          textTransform: 'uppercase',
+          marginBottom: 8,
+        }}>
+          Color Legend
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              background: '#FBBF24',
+            }} />
+            <span style={{ fontSize: '11px', color: '#a1a1aa' }}>Current</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              background: '#34D399',
+            }} />
+            <span style={{ fontSize: '11px', color: '#a1a1aa' }}>Visited</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              background: '#38BDF8',
+            }} />
+            <span style={{ fontSize: '11px', color: '#a1a1aa' }}>Frontier (Queue/Stack)</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              background: '#10B981',
+            }} />
+            <span style={{ fontSize: '11px', color: '#a1a1aa' }}>Shortest Path</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              background: '#EF4444',
+            }} />
+            <span style={{ fontSize: '11px', color: '#a1a1aa' }}>Cycle Detected</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{
+              width: 12,
+              height: 12,
+              borderRadius: '50%',
+              background: '#F97316',
+            }} />
+            <span style={{ fontSize: '11px', color: '#a1a1aa' }}>Recursion Stack</span>
+          </div>
+        </div>
+      </div>
+
     </div>
   )
 }
