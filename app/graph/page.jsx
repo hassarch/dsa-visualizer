@@ -1,7 +1,7 @@
 'use client'
 import { useState, useCallback, useEffect } from 'react'
 import { usePlayback } from '../../hooks/usePlayback'
-import { bfsTraversal, dfsTraversal } from '../../engines/graphEngines'
+import { bfsTraversal, dfsTraversal, dijkstraShortestPath, topologicalSort, cycleDetection, connectedComponents } from '../../engines/graphEngines'
 import PlaybackControls from '../../components/PlaybackControls'
 import InfoPanel from '../../components/InfoPanel'
 import Sidebar from '../../components/Sidebar'
@@ -9,12 +9,17 @@ import Sidebar from '../../components/Sidebar'
 const ALGOS = {
   bfs: { label: 'BFS — Breadth First', fn: bfsTraversal },
   dfs: { label: 'DFS — Depth First', fn: dfsTraversal },
+  dijkstra: { label: 'Dijkstra — Shortest Path', fn: dijkstraShortestPath },
+  topological: { label: 'Topological Sort', fn: topologicalSort },
+  cycle: { label: 'Cycle Detection', fn: cycleDetection },
+  components: { label: 'Connected Components', fn: connectedComponents },
 }
 
 const DEFAULT_GRAPH = {
   nodes: ['A', 'B', 'C', 'D', 'E', 'F'],
   edges: [['A','B'], ['A','C'], ['B','D'], ['B','E'], ['C','F'], ['D','F']],
   start: 'A',
+  end: 'F',
 }
 
 const NODE_POSITIONS = {
@@ -38,6 +43,12 @@ export default function GraphPage() {
   const stack = frame?.stack ?? []
   const current = frame?.current
   const frontier = new Set([...queue, ...stack])
+  const path = frame?.path ?? [] // For Dijkstra shortest path
+  const pathSet = new Set(path)
+  const cycleNodes = new Set(frame?.cycleNodes ?? [])
+  const recStack = new Set(frame?.recStack ?? [])
+  const currentComponent = frame?.currentComponent ?? []
+  const distances = frame?.distances ?? {}
 
   // Debug logging
   useEffect(() => {
@@ -48,16 +59,23 @@ export default function GraphPage() {
     console.log('Queue:', queue)
     console.log('Stack:', stack)
     console.log('Frontier:', [...frontier])
-  }, [frame, visited, current, queue, stack, frontier])
+    console.log('Path:', path)
+    console.log('Cycle:', [...cycleNodes])
+  }, [frame, visited, current, queue, stack, frontier, path, cycleNodes])
 
   function getNodeColor(node) {
+    if (cycleNodes.has(node)) return '#EF4444' // Red for cycle nodes
     if (node === current) return '#FBBF24' // Current (Amber)
+    if (pathSet.has(node)) return '#10B981' // Green for shortest path
     if (frontier.has(node) && !visited.has(node)) return '#38BDF8' // In queue/stack (Cyan)
     if (visited.has(node)) return '#34D399' // Visited (Emerald)
+    if (recStack.has(node)) return '#F97316' // Orange for recursion stack
     return '#71717a' // Default (lighter grey for better visibility)
   }
 
   function getEdgeColor(u, v) {
+    if (cycleNodes.has(u) && cycleNodes.has(v)) return '#EF4444'
+    if (pathSet.has(u) && pathSet.has(v)) return '#10B981'
     if ((u === current && visited.has(v)) || (v === current && visited.has(u))) return '#FBBF24'
     if (visited.has(u) && visited.has(v)) return '#34D399'
     return '#1F1F1F'
@@ -190,6 +208,8 @@ export default function GraphPage() {
                     const isActive = node === current
                     const isVisited = visited.has(node)
                     const isFrontier = frontier.has(node) && !isVisited
+                    const dist = distances[node]
+                    const showDistance = algoKey === 'dijkstra' && dist !== undefined
 
                     return (
                       <g key={node} style={{ opacity: 1 }}>
@@ -219,6 +239,17 @@ export default function GraphPage() {
                           style={{ transition: 'all 0.3s', pointerEvents: 'none' }}>
                           {node}
                         </text>
+
+                        {/* Distance label for Dijkstra */}
+                        {showDistance && (
+                          <text x={pos.x} y={pos.y - 35} textAnchor="middle"
+                            fill={dist === Infinity ? '#71717a' : '#10B981'} 
+                            fontSize="11px" 
+                            fontWeight="600"
+                            fontFamily="JetBrains Mono, monospace">
+                            {dist === Infinity ? '∞' : `d=${dist}`}
+                          </text>
+                        )}
                       </g>
                     )
                   })}
@@ -236,41 +267,99 @@ export default function GraphPage() {
                 overflowY: 'auto' 
               }}>
                 {/* Data Structure Card */}
-                <div>
-                  <div style={{ 
-                    fontSize: '10px', 
-                    fontWeight: 600, 
-                    letterSpacing: '0.08em', 
-                    color: '#71717a', 
-                    textTransform: 'uppercase', 
-                    marginBottom: 12 
-                  }}>
-                    {algoKey === 'bfs' ? 'Queue (FIFO)' : 'Stack (LIFO)'}
-                  </div>
-                  {dataStructure.length === 0 ? (
-                    <div style={{ fontSize: '12px', color: '#52525b', fontStyle: 'italic' }}>Empty</div>
-                  ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      {dataStructure.map((n, i) => (
-                        <div key={i} style={{
-                          padding: '8px 12px', 
-                          borderRadius: '8px', 
-                          textAlign: 'center',
-                          fontSize: '13px', 
-                          fontFamily: 'JetBrains Mono, monospace', 
-                          fontWeight: 700,
-                          background: i === 0 ? 'rgba(255, 255, 255, 0.05)' : '#121212',
-                          border: `1px solid ${i === 0 ? '#ffffff' : '#1F1F1F'}`,
-                          color: i === 0 ? '#ffffff' : '#a1a1aa',
-                          transition: 'all 0.2s'
-                        }}>
-                          {n}
-                          {i === 0 && <span style={{ fontSize: '9px', marginLeft: 6, opacity: 0.5, color: '#71717a' }}>next</span>}
-                        </div>
-                      ))}
+                {(algoKey === 'bfs' || algoKey === 'dfs') && (
+                  <div>
+                    <div style={{ 
+                      fontSize: '10px', 
+                      fontWeight: 600, 
+                      letterSpacing: '0.08em', 
+                      color: '#71717a', 
+                      textTransform: 'uppercase', 
+                      marginBottom: 12 
+                    }}>
+                      {algoKey === 'bfs' ? 'Queue (FIFO)' : 'Stack (LIFO)'}
                     </div>
-                  )}
-                </div>
+                    {dataStructure.length === 0 ? (
+                      <div style={{ fontSize: '12px', color: '#52525b', fontStyle: 'italic' }}>Empty</div>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {dataStructure.map((n, i) => (
+                          <div key={i} style={{
+                            padding: '8px 12px', 
+                            borderRadius: '8px', 
+                            textAlign: 'center',
+                            fontSize: '13px', 
+                            fontFamily: 'JetBrains Mono, monospace', 
+                            fontWeight: 700,
+                            background: i === 0 ? 'rgba(255, 255, 255, 0.05)' : '#121212',
+                            border: `1px solid ${i === 0 ? '#ffffff' : '#1F1F1F'}`,
+                            color: i === 0 ? '#ffffff' : '#a1a1aa',
+                            transition: 'all 0.2s'
+                          }}>
+                            {n}
+                            {i === 0 && <span style={{ fontSize: '9px', marginLeft: 6, opacity: 0.5, color: '#71717a' }}>next</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Shortest Path for Dijkstra */}
+                {algoKey === 'dijkstra' && path.length > 0 && (
+                  <div>
+                    <div style={{ 
+                      fontSize: '10px', 
+                      fontWeight: 600, 
+                      letterSpacing: '0.08em', 
+                      color: '#71717a', 
+                      textTransform: 'uppercase', 
+                      marginBottom: 12 
+                    }}>
+                      Shortest Path
+                    </div>
+                    <div style={{ 
+                      padding: '12px', 
+                      borderRadius: '8px', 
+                      background: 'rgba(16, 185, 129, 0.08)',
+                      border: '1px solid rgba(16, 185, 129, 0.3)',
+                      fontSize: '13px', 
+                      fontFamily: 'JetBrains Mono, monospace', 
+                      fontWeight: 700,
+                      color: '#10B981'
+                    }}>
+                      {path.join(' → ')}
+                    </div>
+                  </div>
+                )}
+
+                {/* Cycle Detection */}
+                {algoKey === 'cycle' && cycleNodes.size > 0 && (
+                  <div>
+                    <div style={{ 
+                      fontSize: '10px', 
+                      fontWeight: 600, 
+                      letterSpacing: '0.08em', 
+                      color: '#71717a', 
+                      textTransform: 'uppercase', 
+                      marginBottom: 12 
+                    }}>
+                      Cycle Found
+                    </div>
+                    <div style={{ 
+                      padding: '12px', 
+                      borderRadius: '8px', 
+                      background: 'rgba(239, 68, 68, 0.08)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      fontSize: '13px', 
+                      fontFamily: 'JetBrains Mono, monospace', 
+                      fontWeight: 700,
+                      color: '#EF4444'
+                    }}>
+                      {[...cycleNodes].join(' ↔ ')}
+                    </div>
+                  </div>
+                )}
 
                 {/* Visited Card */}
                 <div>
