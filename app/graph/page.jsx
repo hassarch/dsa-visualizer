@@ -126,19 +126,99 @@ export default function GraphPage() {
   const [graphInput, setGraphInput] = useState(DEFAULT_GRAPH)
   const [startNode, setStartNode] = useState('A')
   const [endNode, setEndNode] = useState('F')
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false)
+  const [editMode, setEditMode] = useState('view') // 'view', 'addNode', 'addEdge'
+  const [selectedNodeForEdge, setSelectedNodeForEdge] = useState(null)
+  const [customNodes, setCustomNodes] = useState(DEFAULT_GRAPH.nodes)
+  const [customEdges, setCustomEdges] = useState(DEFAULT_GRAPH.edges)
+  const [customPositions, setCustomPositions] = useState(NODE_POSITIONS)
 
   const genFn = useCallback((g) => ALGOS[algoKey].fn(g), [algoKey])
   
   // Memoize the input to prevent infinite loop
   const currentInput = useMemo(() => ({
-    ...graphInput,
+    nodes: customNodes,
+    edges: customEdges,
     start: startNode,
     ...(algoKey === 'dijkstra' ? { end: endNode } : {}),
-  }), [graphInput, startNode, endNode, algoKey])
+  }), [customNodes, customEdges, startNode, endNode, algoKey])
   
   const playback = usePlayback(genFn, currentInput)
   const frame = playback.currentFrame
   const algo = ALGOS[algoKey]
+
+  // Update graphInput when custom graph changes
+  useEffect(() => {
+    setGraphInput({ nodes: customNodes, edges: customEdges })
+  }, [customNodes, customEdges])
+
+  // Handle adding a new node
+  const handleAddNode = (x, y) => {
+    if (editMode !== 'addNode') return
+    
+    // Generate next letter (A, B, C, ...)
+    const lastNode = customNodes[customNodes.length - 1] || '@'
+    const nextNode = String.fromCharCode(lastNode.charCodeAt(0) + 1)
+    
+    setCustomNodes([...customNodes, nextNode])
+    setCustomPositions({ ...customPositions, [nextNode]: { x, y } })
+    setEditMode('view')
+    playback.reset()
+  }
+
+  // Handle node selection for creating edges
+  const handleNodeClick = (node) => {
+    if (editMode === 'addEdge') {
+      if (!selectedNodeForEdge) {
+        setSelectedNodeForEdge(node)
+      } else {
+        // Create edge between selectedNodeForEdge and node
+        if (selectedNodeForEdge !== node) {
+          const edgeExists = customEdges.some(
+            ([a, b]) => (a === selectedNodeForEdge && b === node) || (a === node && b === selectedNodeForEdge)
+          )
+          if (!edgeExists) {
+            setCustomEdges([...customEdges, [selectedNodeForEdge, node]])
+            playback.reset()
+          }
+        }
+        setSelectedNodeForEdge(null)
+        setEditMode('view')
+      }
+    }
+  }
+
+  // Delete node
+  const handleDeleteNode = (node) => {
+    setCustomNodes(customNodes.filter(n => n !== node))
+    setCustomEdges(customEdges.filter(([a, b]) => a !== node && b !== node))
+    const newPositions = { ...customPositions }
+    delete newPositions[node]
+    setCustomPositions(newPositions)
+    
+    // Reset start/end if they were deleted
+    if (startNode === node) setStartNode(customNodes[0])
+    if (endNode === node) setEndNode(customNodes[0])
+    playback.reset()
+  }
+
+  // Delete edge
+  const handleDeleteEdge = (edge) => {
+    setCustomEdges(customEdges.filter(e => !(e[0] === edge[0] && e[1] === edge[1])))
+    playback.reset()
+  }
+
+  // Reset to default graph
+  const handleResetGraph = () => {
+    setCustomNodes(DEFAULT_GRAPH.nodes)
+    setCustomEdges(DEFAULT_GRAPH.edges)
+    setCustomPositions(NODE_POSITIONS)
+    setStartNode('A')
+    setEndNode('F')
+    setEditMode('view')
+    setSelectedNodeForEdge(null)
+    playback.reset()
+  }
 
   const visited = new Set(frame?.visited ?? [])
   const queue = frame?.queue ?? []
@@ -272,7 +352,7 @@ export default function GraphPage() {
                     cursor: 'pointer',
                   }}
                 >
-                  {DEFAULT_GRAPH.nodes.map(node => (
+                  {customNodes.map(node => (
                     <option key={node} value={node}>{node}</option>
                   ))}
                 </select>
@@ -297,14 +377,205 @@ export default function GraphPage() {
                       cursor: 'pointer',
                     }}
                   >
-                    {DEFAULT_GRAPH.nodes.map(node => (
+                    {customNodes.map(node => (
                       <option key={node} value={node}>{node}</option>
                     ))}
                   </select>
                 </div>
               )}
+
+              <button
+                onClick={() => setIsBuilderOpen(!isBuilderOpen)}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  border: '1px solid',
+                  borderColor: isBuilderOpen ? '#10B981' : '#1F1F1F',
+                  background: isBuilderOpen ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                  color: isBuilderOpen ? '#10B981' : '#a1a1aa',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {isBuilderOpen ? '✓ Builder' : '⚙ Build Graph'}
+              </button>
             </div>
           </div>
+
+          {/* Graph Builder Panel */}
+          {isBuilderOpen && (
+            <div style={{
+              padding: '16px',
+              borderRadius: '12px',
+              border: '1px solid #1F1F1F',
+              background: '#050505',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: '12px', fontWeight: 600, color: '#ffffff' }}>
+                  Graph Builder
+                </div>
+                <button
+                  onClick={handleResetGraph}
+                  style={{
+                    padding: '4px 8px',
+                    borderRadius: 6,
+                    border: '1px solid #EF4444',
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    color: '#EF4444',
+                    fontSize: '10px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Reset to Default
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  onClick={() => setEditMode(editMode === 'addNode' ? 'view' : 'addNode')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 6,
+                    border: '1px solid',
+                    borderColor: editMode === 'addNode' ? '#10B981' : '#1F1F1F',
+                    background: editMode === 'addNode' ? 'rgba(16, 185, 129, 0.1)' : 'transparent',
+                    color: editMode === 'addNode' ? '#10B981' : '#a1a1aa',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {editMode === 'addNode' ? '✓ Adding Node' : '+ Add Node'}
+                </button>
+
+                <button
+                  onClick={() => {
+                    setEditMode(editMode === 'addEdge' ? 'view' : 'addEdge')
+                    setSelectedNodeForEdge(null)
+                  }}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 6,
+                    border: '1px solid',
+                    borderColor: editMode === 'addEdge' ? '#38BDF8' : '#1F1F1F',
+                    background: editMode === 'addEdge' ? 'rgba(56, 189, 248, 0.1)' : 'transparent',
+                    color: editMode === 'addEdge' ? '#38BDF8' : '#a1a1aa',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {editMode === 'addEdge' ? (selectedNodeForEdge ? `Select 2nd node` : '✓ Select 1st node') : '+ Add Edge'}
+                </button>
+              </div>
+
+              {editMode === 'addNode' && (
+                <div style={{
+                  padding: '8px 12px',
+                  borderRadius: 6,
+                  background: 'rgba(16, 185, 129, 0.05)',
+                  border: '1px solid rgba(16, 185, 129, 0.2)',
+                  fontSize: '11px',
+                  color: '#10B981',
+                }}>
+                  Click anywhere on the graph canvas to add a node
+                </div>
+              )}
+
+              {editMode === 'addEdge' && (
+                <div style={{
+                  padding: '8px 12px',
+                  borderRadius: 6,
+                  background: 'rgba(56, 189, 248, 0.05)',
+                  border: '1px solid rgba(56, 189, 248, 0.2)',
+                  fontSize: '11px',
+                  color: '#38BDF8',
+                }}>
+                  {selectedNodeForEdge 
+                    ? `Selected: ${selectedNodeForEdge}. Now click another node to connect.`
+                    : 'Click a node to start creating an edge'}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 150, overflowY: 'auto' }}>
+                <div style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase' }}>
+                  Nodes ({customNodes.length})
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {customNodes.map(node => (
+                    <div key={node} style={{
+                      padding: '4px 8px',
+                      borderRadius: 6,
+                      background: '#121212',
+                      border: '1px solid #1F1F1F',
+                      fontSize: '11px',
+                      fontFamily: 'JetBrains Mono, monospace',
+                      color: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}>
+                      {node}
+                      <button
+                        onClick={() => handleDeleteNode(node)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#EF4444',
+                          cursor: 'pointer',
+                          fontSize: '10px',
+                          padding: 0,
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+
+                <div style={{ fontSize: '10px', fontWeight: 600, color: '#71717a', textTransform: 'uppercase', marginTop: 8 }}>
+                  Edges ({customEdges.length})
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {customEdges.map((edge, i) => (
+                    <div key={i} style={{
+                      padding: '4px 8px',
+                      borderRadius: 6,
+                      background: '#121212',
+                      border: '1px solid #1F1F1F',
+                      fontSize: '11px',
+                      fontFamily: 'JetBrains Mono, monospace',
+                      color: '#a1a1aa',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}>
+                      {edge[0]} — {edge[1]}
+                      <button
+                        onClick={() => handleDeleteEdge(edge)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: '#EF4444',
+                          cursor: 'pointer',
+                          fontSize: '10px',
+                          padding: 0,
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Visualizer Card */}
           <div style={{
@@ -325,7 +596,24 @@ export default function GraphPage() {
               
               {/* Graph SVG canvas */}
               <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="100%" height="100%" viewBox="0 0 800 480" style={{ display: 'block', maxWidth: '1400px', maxHeight: '600px' }}>
+                <svg 
+                  width="100%" 
+                  height="100%" 
+                  viewBox="0 0 800 480" 
+                  style={{ display: 'block', maxWidth: '1400px', maxHeight: '600px', cursor: editMode === 'addNode' ? 'crosshair' : 'default' }}
+                  onClick={(e) => {
+                    if (editMode === 'addNode') {
+                      const svg = e.currentTarget
+                      const rect = svg.getBoundingClientRect()
+                      const viewBox = svg.viewBox.baseVal
+                      const scaleX = viewBox.width / rect.width
+                      const scaleY = viewBox.height / rect.height
+                      const x = (e.clientX - rect.left) * scaleX
+                      const y = (e.clientY - rect.top) * scaleY
+                      handleAddNode(x, y)
+                    }
+                  }}
+                >
                   <defs>
                     <filter id="node-glow">
                       <feGaussianBlur stdDeviation="4" result="coloredBlur" />
@@ -334,12 +622,13 @@ export default function GraphPage() {
                   </defs>
 
                   {/* Edges */}
-                  {DEFAULT_GRAPH.edges.map(([u, v]) => {
-                    const pu = NODE_POSITIONS[u], pv = NODE_POSITIONS[v]
+                  {customEdges.map(([u, v], idx) => {
+                    const pu = customPositions[u], pv = customPositions[v]
+                    if (!pu || !pv) return null
                     const edgeColor = getEdgeColor(u, v)
                     const isActive = edgeColor !== '#1F1F1F'
                     return (
-                      <line key={`${u}-${v}`}
+                      <line key={`${u}-${v}-${idx}`}
                         x1={pu.x} y1={pu.y} x2={pv.x} y2={pv.y}
                         stroke={edgeColor}
                         strokeWidth={isActive ? 3 : 2}
@@ -350,22 +639,38 @@ export default function GraphPage() {
                   })}
 
                   {/* Nodes */}
-                  {DEFAULT_GRAPH.nodes.map(node => {
-                    const pos = NODE_POSITIONS[node]
+                  {customNodes.map(node => {
+                    const pos = customPositions[node]
+                    if (!pos) return null
                     const color = getNodeColor(node)
                     const isActive = node === current
                     const isVisited = visited.has(node)
                     const isFrontier = frontier.has(node) && !isVisited
                     const dist = distances[node]
                     const showDistance = algoKey === 'dijkstra' && dist !== undefined
+                    const isSelected = selectedNodeForEdge === node
 
                     return (
-                      <g key={node} style={{ opacity: 1 }}>
+                      <g 
+                        key={node} 
+                        style={{ opacity: 1, cursor: editMode === 'addEdge' ? 'pointer' : 'default' }}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleNodeClick(node)
+                        }}
+                      >
                         {/* Glow ring for active */}
                         {isActive && (
                           <circle cx={pos.x} cy={pos.y} r={48}
                             fill="none" stroke={color} strokeWidth={1.5} opacity={0.3}
                             filter="url(#node-glow)" />
+                        )}
+
+                        {/* Selection ring for edge creation */}
+                        {isSelected && (
+                          <circle cx={pos.x} cy={pos.y} r={42}
+                            fill="none" stroke="#38BDF8" strokeWidth={2} opacity={0.6}
+                            strokeDasharray="5,5" />
                         )}
 
                         {/* Node circle */}
@@ -394,7 +699,8 @@ export default function GraphPage() {
                             fill={dist === Infinity ? '#71717a' : '#10B981'} 
                             fontSize="11px" 
                             fontWeight="600"
-                            fontFamily="JetBrains Mono, monospace">
+                            fontFamily="JetBrains Mono, monospace"
+                            style={{ pointerEvents: 'none' }}>
                             {dist === Infinity ? '∞' : `d=${dist}`}
                           </text>
                         )}
